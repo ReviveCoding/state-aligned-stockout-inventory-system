@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600"
+ viewBox="0 0 1200 600" role="img" aria-labelledby="title desc">
+<title id="title">M5 confirmation reliability checks</title>
+<desc id="desc">M5 confirmation reliability checks. Generated from committed M5 confirmation metrics.</desc>
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<style>
+text{font-family:Arial,Helvetica,sans-serif}
+.title{font-size:31px;font-weight:700;fill:#0F172A}
+.subtitle{font-size:17px;fill:#475569}
+.label{font-size:16px;font-weight:700;fill:#334155}
+.small{font-size:14px;fill:#475569}
+.value{font-size:37px;font-weight:700;fill:#0F172A}
+.note{font-size:13px;fill:#64748B}
+</style>
+<text x="60" y="58" class="title">Reliability checks on the M5 confirmation cohort</text>
+<text x="60" y="86" class="subtitle">Configured release result: PASS | validation-constrained candidate selection</text>
+<rect x="60" y="138" width="1080" height="58" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
+<rect x="60" y="138" width="8" height="58" rx="8" fill="#15803D" stroke="#15803D"/>
+<text x="88" y="163" class="label">Interval-width ratio</text>
+<text x="610" y="163" class="label">1.078x</text>
+<text x="820" y="163" class="small">Configured cap 1.350x</text>
+<text x="1060" y="163" class="label">PASS</text>
+<rect x="60" y="218" width="1080" height="58" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
+<rect x="60" y="218" width="8" height="58" rx="8" fill="#15803D" stroke="#15803D"/>
+<text x="88" y="243" class="label">Worst-slice WAPE regression</text>
+<text x="610" y="243" class="label">-7.05%</text>
+<text x="820" y="243" class="small">Configured cap +20.00%</text>
+<text x="1060" y="243" class="label">PASS</text>
+<rect x="60" y="298" width="1080" height="58" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
+<rect x="60" y="298" width="8" height="58" rx="8" fill="#15803D" stroke="#15803D"/>
+<text x="88" y="323" class="label">Fill-rate degradation</text>
+<text x="610" y="323" class="label">-0.103 pp</text>
+<text x="820" y="323" class="small">Configured cap +1.000 pp</text>
+<text x="1060" y="323" class="label">PASS</text>
+<rect x="60" y="378" width="1080" height="58" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
+<rect x="60" y="378" width="8" height="58" rx="8" fill="#15803D" stroke="#15803D"/>
+<text x="88" y="403" class="label">Series cost-win rate</text>
+<text x="610" y="403" class="label">88.33%</text>
+<text x="820" y="403" class="small">Configured floor 50.00%</text>
+<text x="1060" y="403" class="label">PASS</text>
+<rect x="60" y="458" width="1080" height="58" rx="10" fill="#F8FAFC" stroke="#CBD5E1"/>
+<rect x="60" y="458" width="8" height="58" rx="8" fill="#15803D" stroke="#15803D"/>
+<text x="88" y="483" class="label">Forecast-slice win rate</text>
+<text x="610" y="483" class="label">100.00%</text>
+<text x="820" y="483" class="small">Configured floor 35.00%</text>
+<text x="1060" y="483" class="label">PASS</text>
+<text x="60" y="570" class="note">All values are generated from the committed M5 confirmation metrics summary.</text>
+</svg>

@@ -21,6 +21,30 @@ Current release candidate: **0.6.2**.
 - Inventory improvements are simulator results under documented cost, lead-time, and service assumptions.
 - Chronos-2 and PySpark adapters are implemented, but their optional runtimes are not required for the CPU-safe core pipeline.
 
+<!-- README_VISUALS_START -->
+## Visual evidence at a glance
+
+These figures are generated from committed M5 confirmation metrics:
+
+```bash
+python scripts/generate_readme_visuals.py --root . --output-dir docs/figures
+```
+
+They show offline held-out M5 confirmation evidence. They are not full-M5 leaderboard, production-retailer, or deployment outcomes.
+
+### M5 confirmation scorecard
+
+![M5 confirmation scorecard](docs/figures/m5_confirmation_scorecard.svg)
+
+### Held-out outcome summary
+
+![Held-out M5 outcome summary](docs/figures/m5_heldout_outcomes.svg)
+
+### Reliability checks
+
+![M5 confirmation reliability checks](docs/figures/m5_reliability_checks.svg)
+
+<!-- README_VISUALS_END -->
 ## Quickstart
 
 ```bash

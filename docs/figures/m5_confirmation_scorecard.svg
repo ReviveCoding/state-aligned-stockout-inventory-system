@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="438"
+ viewBox="0 0 1200 438" role="img" aria-labelledby="title desc">
+<title id="title">M5 series-disjoint confirmation scorecard</title>
+<desc id="desc">M5 series-disjoint confirmation scorecard. Generated from committed M5 confirmation metrics.</desc>
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<style>
+text{font-family:Arial,Helvetica,sans-serif}
+.title{font-size:31px;font-weight:700;fill:#0F172A}
+.subtitle{font-size:17px;fill:#475569}
+.label{font-size:16px;font-weight:700;fill:#334155}
+.small{font-size:14px;fill:#475569}
+.value{font-size:37px;font-weight:700;fill:#0F172A}
+.note{font-size:13px;fill:#64748B}
+</style>
+<text x="60" y="58" class="title">M5 series-disjoint confirmation</text>
+<text x="60" y="86" class="subtitle">Actual M5 archive | 240 held-out series | selected candidate: reliability router</text>
+<rect x="60" y="124" width="252" height="180" rx="12" fill="#EFF6FF" stroke="#CBD5E1"/>
+<rect x="60" y="124" width="7" height="180" rx="7" fill="#2563EB" stroke="#2563EB"/>
+<text x="84" y="166" class="label">Held-out WAPE</text>
+<text x="84" y="220" class="value">-16.56%</text>
+<text x="84" y="258" class="small">vs seasonal naive</text>
+<rect x="330" y="124" width="252" height="180" rx="12" fill="#F0FDF4" stroke="#CBD5E1"/>
+<rect x="330" y="124" width="7" height="180" rx="7" fill="#15803D" stroke="#15803D"/>
+<text x="354" y="166" class="label">Simulated cost</text>
+<text x="354" y="220" class="value">-18.17%</text>
+<text x="354" y="258" class="small">vs seasonal naive</text>
+<rect x="600" y="124" width="252" height="180" rx="12" fill="#FFF7ED" stroke="#CBD5E1"/>
+<rect x="600" y="124" width="7" height="180" rx="7" fill="#B45309" stroke="#B45309"/>
+<text x="624" y="166" class="label">Fill-rate change</text>
+<text x="624" y="220" class="value">+0.103 pp</text>
+<text x="624" y="258" class="small">no service loss</text>
+<rect x="870" y="124" width="252" height="180" rx="12" fill="#F8FAFC" stroke="#CBD5E1"/>
+<rect x="870" y="124" width="7" height="180" rx="7" fill="#64748B" stroke="#64748B"/>
+<text x="894" y="166" class="label">Series cost wins</text>
+<text x="894" y="220" class="value">88.33%</text>
+<text x="894" y="258" class="small">at fixed policy contract</text>
+<line x1="60" y1="344" x2="1140" y2="344" stroke="#CBD5E1"/>
+<text x="60" y="378" class="label">Release gate: PASS</text>
+<text x="60" y="406" class="note">Offline M5 confirmation only; not a full-M5 leaderboard or production-retailer result.</text>
+</svg>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="580"
+ viewBox="0 0 1200 580" role="img" aria-labelledby="title desc">
+<title id="title">Held-out M5 outcomes versus seasonal-naive baseline</title>
+<desc id="desc">Held-out M5 outcomes versus seasonal-naive baseline. Generated from committed M5 confirmation metrics.</desc>
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<style>
+text{font-family:Arial,Helvetica,sans-serif}
+.title{font-size:31px;font-weight:700;fill:#0F172A}
+.subtitle{font-size:17px;fill:#475569}
+.label{font-size:16px;font-weight:700;fill:#334155}
+.small{font-size:14px;fill:#475569}
+.value{font-size:37px;font-weight:700;fill:#0F172A}
+.note{font-size:13px;fill:#64748B}
+</style>
+<text x="60" y="58" class="title">Selected candidate vs seasonal-naive baseline</text>
+<text x="60" y="86" class="subtitle">Held-out M5 evaluation | candidate: reliability router | each row has its own scale</text>
+<rect x="820" y="110" width="18" height="18" rx="3" fill="#64748B" stroke="none"/>
+<text x="846" y="125" class="small">Seasonal naive</text>
+<rect x="1000" y="110" width="18" height="18" rx="3" fill="#2563EB" stroke="none"/>
+<text x="1026" y="125" class="small">reliability router</text>
+<text x="60" y="175" class="label">Held-out WAPE</text>
+<text x="60" y="198" class="note">Lower is better</text>
+<rect x="350" y="159" width="620" height="14" rx="7" fill="#E2E8F0" stroke="none"/>
+<rect x="350" y="159" width="553.5714285714286" height="14" rx="7" fill="#64748B" stroke="none"/>
+<rect x="350" y="197" width="461.92533345736524" height="14" rx="7" fill="#2563EB" stroke="none"/>
+<text x="985" y="171" class="small">45.51%</text>
+<text x="985" y="209" class="small">37.98%</text>
+<text x="60" y="287" class="label">Simulated inventory cost</text>
+<text x="60" y="310" class="note">Lower is better</text>
+<rect x="350" y="271" width="620" height="14" rx="7" fill="#E2E8F0" stroke="none"/>
+<rect x="350" y="271" width="553.5714285714286" height="14" rx="7" fill="#64748B" stroke="none"/>
+<rect x="350" y="309" width="452.9992152585575" height="14" rx="7" fill="#2563EB" stroke="none"/>
+<text x="985" y="283" class="small">105,267.80</text>
+<text x="985" y="321" class="small">86,142.87</text>
+<text x="60" y="399" class="label">Fill rate</text>
+<text x="60" y="422" class="note">Higher is better</text>
+<rect x="350" y="383" width="620" height="14" rx="7" fill="#E2E8F0" stroke="none"/>
+<rect x="350" y="383" width="552.9667037816394" height="14" rx="7" fill="#64748B" stroke="none"/>
+<rect x="350" y="421" width="553.5714285714286" height="14" rx="7" fill="#2563EB" stroke="none"/>
+<text x="985" y="395" class="small">94.51%</text>
+<text x="985" y="433" class="small">94.61%</text>
+<line x1="60" y1="490" x2="1140" y2="490" stroke="#CBD5E1"/>
+<text x="60" y="522" class="note">Observed change: WAPE -16.56% | simulated cost -18.17% | fill rate +0.103 pp.</text>
+<text x="60" y="548" class="note">The candidate was selected through validation constraints rather than held-out test optimization.</text>
+</svg>
