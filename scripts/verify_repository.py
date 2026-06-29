@@ -76,10 +76,10 @@ def verify_wheel(root: Path) -> None:
         stale.unlink()
     # `pip wheel` is available in standard virtual environments and avoids
     # making repository verification depend on the optional `build` package.
-    # No build isolation keeps this validation offline and reproducible.
+    # Keep pip build isolation enabled so declared build requirements are installed in clean CI environments.
     run([
         sys.executable, "-m", "pip", "wheel", ".", "--no-deps",
-        "--no-build-isolation", "--wheel-dir", str(dist),
+        "--wheel-dir", str(dist),
     ], root)
     wheels = sorted(dist.glob("*.whl"))
     if not wheels:

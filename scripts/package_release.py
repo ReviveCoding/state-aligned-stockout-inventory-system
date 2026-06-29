@@ -16,7 +16,8 @@ EXCLUDED_PARTS = {
     ".git", ".pytest_cache", "__pycache__", ".mypy_cache", ".ruff_cache",
     ".idea", ".vscode", ".ipynb_checkpoints", ".tox", ".nox",
     "dist", "build", ".venv", "venv",
-}
+
+    ".local-run",}
 EXCLUDED_FILENAMES = {
     ".coverage", ".env", ".DS_Store", "Thumbs.db", "repo_tree.txt",
     # These are release-sidecar artifacts. Embedding final archive hashes

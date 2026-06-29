@@ -172,7 +172,7 @@
       "n_series": 12
     },
     "run_name": "synthetic_smoke",
-    "runtime_seconds": 22.035332679748535,
+    "runtime_seconds": 26.145645141601562,
     "scenario_diagnostics": {
       "mean_lag1_correlation": 0.4291291073819116,
       "n_scenarios": 120,

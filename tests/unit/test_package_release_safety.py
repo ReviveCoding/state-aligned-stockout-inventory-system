@@ -27,3 +27,11 @@ def test_release_package_excludes_rollback_and_generated_tree_artifacts() -> Non
     assert package_release.include(
         Path("src/inventory_ai/pipeline.py")
     )
+
+
+def test_release_package_excludes_local_run_outputs() -> None:
+    package_release = _load_package_release()
+
+    assert not package_release.include(
+        Path(".local-run/ci_build_isolation/smoke.yaml")
+    )
