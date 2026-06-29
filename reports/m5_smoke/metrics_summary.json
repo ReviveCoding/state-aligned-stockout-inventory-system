@@ -1,0 +1,366 @@
+{
+  "calibration_fold_count": 1,
+  "calibration_origin": 83,
+  "candidate_cost_regression": -0.09404149262212316,
+  "candidate_fill_rate_degradation": 0.0025540881644224855,
+  "candidate_interval_width_ratio": 1.320308418865632,
+  "candidate_wape_improvement": 0.05061866630444328,
+  "chronos_capability": {
+    "available": false,
+    "message": "Chronos is optional. Install with `pip install -e .[chronos]` before GPU zero-shot or LoRA experiments. Detected: ModuleNotFoundError",
+    "version": null
+  },
+  "closed_loop_cost_regression": 0.0465510488224436,
+  "closed_loop_lost_sales_improvement": 0.17024538075801937,
+  "closed_loop_slice_summary": {
+    "n_slices": 4,
+    "worst_cost_slice": "intermittent",
+    "worst_fill_rate_degradation": 0.0016521451283221245,
+    "worst_fill_slice": "transient_promotion",
+    "worst_relative_cost_regression": 0.2085620824239581
+  },
+  "closed_loop_summary": {
+    "naive_no_recovery": {
+      "cumulative_bias": -0.01647084628138578,
+      "inventory_oscillation": 7.3549643132778,
+      "lost_sales": 135.8326264490883,
+      "repeat_stockout_events": 1,
+      "repeat_stockout_ratio": 0.002777777777777778,
+      "repeat_stockout_share": 0.05263157894736842,
+      "stockout_rate": 0.049479166666666664,
+      "total_cost": 8512.322292320896
+    },
+    "recovery_state_aware": {
+      "cumulative_bias": 0.001270240250910058,
+      "inventory_oscillation": 7.369385703134118,
+      "lost_sales": 112.70774923973121,
+      "repeat_stockout_events": 1,
+      "repeat_stockout_ratio": 0.002777777777777778,
+      "repeat_stockout_share": 0.058823529411764705,
+      "stockout_rate": 0.044270833333333336,
+      "total_cost": 8908.579822943148
+    }
+  },
+  "conformal_history_fold_count": 3,
+  "conformal_update_origins": [
+    97,
+    111
+  ],
+  "cost_win_rate": 0.8333333333333334,
+  "data_contract": {
+    "max_date_idx": 139,
+    "min_date_idx": 0,
+    "rows": 3360,
+    "series": 24
+  },
+  "data_fallback_reason": null,
+  "data_source": "m5",
+  "forecast_slice_summary": {
+    "n_slices": 15,
+    "slice_win_rate": 0.8,
+    "worst_relative_wape_regression": 0.053222466574893226,
+    "worst_slice": "store=TX_2"
+  },
+  "hierarchy_max_error": 0.0,
+  "inventory_summary": {
+    "production_candidate": {
+      "average_inventory": 21.434866062093867,
+      "fill_rate": 0.9801441778176612,
+      "lost_sales": 110.59692955564714,
+      "order_volatility": 8.763053331236302,
+      "stockout_rate": 0.041666666666666664,
+      "total_cost": 8189.124616527259
+    },
+    "quantile_gbm": {
+      "average_inventory": 32.23136417751283,
+      "fill_rate": 0.9811377461415809,
+      "lost_sales": 105.06275399141347,
+      "order_volatility": 11.2907319864821,
+      "stockout_rate": 0.011904761904761904,
+      "total_cost": 11821.844496604936
+    },
+    "reliability_router": {
+      "average_inventory": 21.434866062093867,
+      "fill_rate": 0.9801441778176612,
+      "lost_sales": 110.59692955564714,
+      "order_volatility": 8.763053331236302,
+      "stockout_rate": 0.041666666666666664,
+      "total_cost": 8189.124616527259
+    },
+    "seasonal_naive": {
+      "average_inventory": 24.17750527793899,
+      "fill_rate": 0.9826982659820837,
+      "lost_sales": 96.37065847981164,
+      "order_volatility": 9.526809706896612,
+      "stockout_rate": 0.03571428571428571,
+      "total_cost": 9039.182865260798
+    },
+    "tsb": {
+      "average_inventory": 19.99688112349567,
+      "fill_rate": 0.9640574612964283,
+      "lost_sales": 200.1999405789303,
+      "order_volatility": 8.456606772122209,
+      "stockout_rate": 0.0625,
+      "total_cost": 8140.537957838225
+    }
+  },
+  "lifecycle_metrics": {
+    "ladt_mae": 0.08665482612221924,
+    "ladt_spearman": 0.9004547714837464,
+    "n": 2520,
+    "state_macro_f1": 0.6658122214133935
+  },
+  "negative_forecasts": 0,
+  "quantile_crossing": 0,
+  "recovery_diagnostics": {
+    "absolute_bias_improvement": 0.6935883772262147,
+    "do_no_harm_max": 0.0,
+    "mae_improvement": 0.4038998252030079,
+    "n_controlled": 488,
+    "q80_upper_coverage": 0.6680327868852459,
+    "q95_upper_coverage": 0.9139344262295082,
+    "raw_bias": -11.661417397326145,
+    "raw_mae": 11.661417397326145,
+    "recovered_bias": -3.573193827863568,
+    "recovered_mae": 6.9513729485229
+  },
+  "recovery_do_no_harm_max": 0.0,
+  "recovery_lower_bound_violations": 0,
+  "repeat_stockout_improvement": 0.0,
+  "repeat_stockout_ratio": 0.002777777777777778,
+  "routing_summary": {
+    "fallback_rate": 0.375,
+    "mean_validation_cost_improvement": 0.19163513299067655,
+    "mean_validation_improvement": 0.04929656927930539,
+    "model_counts": {
+      "quantile_gbm": 3,
+      "seasonal_naive": 9,
+      "tsb": 12
+    },
+    "n_series": 24
+  },
+  "run_name": "m5_smoke",
+  "runtime_seconds": 36.476351261138916,
+  "scenario_diagnostics": {
+    "mean_lag1_correlation": 0.36816294859336274,
+    "n_scenarios": 120,
+    "negative_values": 0,
+    "normalized_quantile_mae": 0.04015958833998225
+  },
+  "scenario_hierarchy_error": 0.0,
+  "selected_model": "reliability_router",
+  "selected_policy_scale": 0.9,
+  "test_forecast_metrics": {
+    "production_candidate": {
+      "coverage_80": 0.8303571428571429,
+      "mean_interval_width": 16.15050204309757,
+      "n": 336,
+      "pinball_q10": 1.1942508016874656,
+      "pinball_q50": 2.366427524659856,
+      "pinball_q90": 1.1957897281734493,
+      "signed_bias": -0.12066441021426573,
+      "wape": 0.28550077137722396
+    },
+    "quantile_gbm": {
+      "coverage_80": 0.9672619047619048,
+      "mean_interval_width": 26.6138383914124,
+      "n": 336,
+      "pinball_q10": 1.4488299169140653,
+      "pinball_q50": 2.5702494453005795,
+      "pinball_q90": 1.5101461680570034,
+      "signed_bias": -0.21776564292989517,
+      "wape": 0.3100911359500322
+    },
+    "reliability_router": {
+      "coverage_80": 0.8303571428571429,
+      "mean_interval_width": 16.15050204309757,
+      "n": 336,
+      "pinball_q10": 1.1942508016874656,
+      "pinball_q50": 2.366427524659856,
+      "pinball_q90": 1.1957897281734493,
+      "signed_bias": -0.12066441021426573,
+      "wape": 0.28550077137722396
+    },
+    "seasonal_naive": {
+      "coverage_80": 0.8184523809523809,
+      "mean_interval_width": 12.232370718088182,
+      "n": 336,
+      "pinball_q10": 1.0155024580065568,
+      "pinball_q50": 2.4925995920605213,
+      "pinball_q90": 1.400528022296769,
+      "signed_bias": -0.12029460157340804,
+      "wape": 0.3007229669415385
+    },
+    "tsb": {
+      "coverage_80": 0.7886904761904762,
+      "mean_interval_width": 14.883825227743264,
+      "n": 336,
+      "pinball_q10": 0.811614416834718,
+      "pinball_q50": 2.356989019608036,
+      "pinball_q90": 1.1968096653683682,
+      "signed_bias": -0.03210106939241145,
+      "wape": 0.28436205048048757
+    }
+  },
+  "test_policy_scales": {
+    "production_candidate": 0.9,
+    "quantile_gbm": 0.9,
+    "reliability_router": 0.9,
+    "seasonal_naive": 0.95,
+    "tsb": 0.8
+  },
+  "truth_coverage_error": 0,
+  "validation_fold_count": 2,
+  "validation_forecast_metrics": {
+    "quantile_gbm": {
+      "coverage_80": 0.9479166666666666,
+      "mean_interval_width": 24.454983592611274,
+      "n": 672,
+      "pinball_q10": 1.3887125382041259,
+      "pinball_q50": 2.8685909163182792,
+      "pinball_q90": 1.967209321960071,
+      "signed_bias": -0.2399447771371212,
+      "wape": 0.34245746949115513
+    },
+    "reliability_router": {
+      "coverage_80": 0.8363095238095238,
+      "mean_interval_width": 14.853901024830346,
+      "n": 672,
+      "pinball_q10": 1.0797652482227877,
+      "pinball_q50": 2.365596612777302,
+      "pinball_q90": 1.4291232088932058,
+      "signed_bias": -0.16830062292672957,
+      "wape": 0.28240911774492905
+    },
+    "seasonal_naive": {
+      "coverage_80": 0.8139880952380952,
+      "mean_interval_width": 11.262589046801603,
+      "n": 672,
+      "pinball_q10": 0.9792624850049582,
+      "pinball_q50": 2.5510799085665172,
+      "pinball_q90": 1.71788604219707,
+      "signed_bias": -0.16394865940609868,
+      "wape": 0.30455244245097657
+    },
+    "tsb": {
+      "coverage_80": 0.7991071428571429,
+      "mean_interval_width": 15.728730917597913,
+      "n": 672,
+      "pinball_q10": 0.9038296326516401,
+      "pinball_q50": 2.459984433502684,
+      "pinball_q90": 1.308085877106348,
+      "signed_bias": -0.05865486512006679,
+      "wape": 0.2936773031290916
+    }
+  },
+  "validation_inventory_raw_summary": {
+    "quantile_gbm": {
+      "average_inventory": 36.500842816124326,
+      "fill_rate": 0.9782513447142304,
+      "lost_sales": 244.84636120721686,
+      "order_volatility": 9.66070719755192,
+      "policy_scale": 1.0,
+      "stockout_rate": 0.005952380952380952,
+      "total_cost": 26786.81473442394
+    },
+    "reliability_router": {
+      "average_inventory": 24.746674907483662,
+      "fill_rate": 0.97475573979346,
+      "lost_sales": 284.19988140525277,
+      "order_volatility": 7.491097091285039,
+      "policy_scale": 1.0,
+      "stockout_rate": 0.02976190476190476,
+      "total_cost": 19042.28456421363
+    },
+    "seasonal_naive": {
+      "average_inventory": 24.678453471279443,
+      "fill_rate": 0.9631610857911099,
+      "lost_sales": 414.732496163721,
+      "order_volatility": 8.312130280357982,
+      "policy_scale": 1.0,
+      "stockout_rate": 0.023809523809523808,
+      "total_cost": 19636.57630116176
+    },
+    "tsb": {
+      "average_inventory": 31.356670396423503,
+      "fill_rate": 0.9885585341730998,
+      "lost_sales": 128.8080222792541,
+      "order_volatility": 8.42850399845372,
+      "policy_scale": 1.0,
+      "stockout_rate": 0.041666666666666664,
+      "total_cost": 22721.225504776423
+    }
+  },
+  "validation_inventory_summary": {
+    "quantile_gbm": {
+      "average_inventory": 30.317678933611713,
+      "cost_win_rate_vs_baseline": 0.20833333333333334,
+      "fill_rate": 0.9618810936954163,
+      "lost_sales": 429.1426471770419,
+      "order_volatility": 9.12495064124409,
+      "policy_scale": 0.9,
+      "stockout_rate": 0.01636904761904762,
+      "total_cost": 23526.8946339141
+    },
+    "reliability_router": {
+      "average_inventory": 19.641464507555696,
+      "cost_win_rate_vs_baseline": 0.9166666666666666,
+      "fill_rate": 0.9613787600347579,
+      "lost_sales": 434.79791952873506,
+      "order_volatility": 7.250798302139714,
+      "policy_scale": 0.9,
+      "stockout_rate": 0.047619047619047616,
+      "total_cost": 16346.435169301509
+    },
+    "seasonal_naive": {
+      "average_inventory": 22.10645477513921,
+      "cost_win_rate_vs_baseline": 1.0,
+      "fill_rate": 0.9570797769270304,
+      "lost_sales": 483.195871355535,
+      "order_volatility": 8.187014785315581,
+      "policy_scale": 0.95,
+      "stockout_rate": 0.026785714285714284,
+      "total_cost": 18242.07257217932
+    },
+    "tsb": {
+      "average_inventory": 19.74021106676613,
+      "cost_win_rate_vs_baseline": 0.9166666666666666,
+      "fill_rate": 0.9598591253650232,
+      "lost_sales": 451.90596664060917,
+      "order_volatility": 7.522942317556069,
+      "policy_scale": 0.8,
+      "stockout_rate": 0.08035714285714286,
+      "total_cost": 16493.465016633592
+    }
+  },
+  "validation_origins": [
+    97,
+    111
+  ],
+  "validation_slice_summaries": {
+    "quantile_gbm": {
+      "n_slices": 15,
+      "slice_win_rate": 0.5333333333333333,
+      "worst_relative_wape_regression": 0.8183440834614578,
+      "worst_slice": "store=CA_3"
+    },
+    "reliability_router": {
+      "n_slices": 15,
+      "slice_win_rate": 0.8666666666666667,
+      "worst_relative_wape_regression": 0.04268880949148104,
+      "worst_slice": "stockout=1"
+    },
+    "seasonal_naive": {
+      "n_slices": 0,
+      "slice_win_rate": 1.0,
+      "worst_relative_wape_regression": 0.0,
+      "worst_slice": null
+    },
+    "tsb": {
+      "n_slices": 15,
+      "slice_win_rate": 0.8,
+      "worst_relative_wape_regression": 0.11458273789737838,
+      "worst_slice": "store=TX_2"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+seed: 42
+run_name: auto_local
+data:
+  source: auto
+  m5_zip_path: /mnt/data/m5-forecasting-accuracy.zip
+  n_series: 24
+  history_days: 140
+  controlled_stockout_rate: 0.12
+  allow_fallback: true
+model:
+  horizon: 14
+  max_train_rows: 15000
+  max_iter: 30
+  validation_horizon: 14
+  decision_cost_tolerance: 0.05
+  router_max_wape_regression: 0.10
+inventory:
+  holding_cost: 1.0
+  shortage_cost: 5.0
+  order_cost: 0.1
+  lead_time_days: 2
+  review_period_days: 1
+  service_level: 0.80
+release_gate: {}
+closed_loop_cycles: 16
+lifecycle_series: 18
+output_dir: reports/auto_local
+artifact_dir: artifacts/auto_local

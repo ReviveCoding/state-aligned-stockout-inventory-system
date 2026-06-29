@@ -1,0 +1,60 @@
+name: ci
+
+env:
+  OMP_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+  PYTHONHASHSEED: "0"
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            pyproject.toml
+            requirements.txt
+            constraints/base.txt
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e .[dev] -c constraints/base.txt
+      - run: python -m compileall -q src scripts
+      - run: python -m pytest -q
+      - run: python scripts/run_pipeline.py --config configs/smoke.yaml
+      - run: python scripts/run_sql_marts.py --config configs/smoke.yaml
+      - run: python scripts/verify_repository.py --config configs/smoke.yaml --skip-pipeline --skip-tests
+      - run: python -m build
+      - if: matrix.python-version == '3.11'
+        run: make package
+      - if: matrix.python-version == '3.11'
+        run: make verify-package-static
+      - if: matrix.python-version == '3.11'
+        run: make verify-package-tests
+      - if: matrix.python-version == '3.11'
+        run: make verify-package-runtime
+      - uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-smoke-py${{ matrix.python-version }}
+          path: |
+            reports/synthetic_smoke/metrics_summary.json
+            reports/synthetic_smoke/release_gate.json
+            reports/synthetic_smoke/release_report.md
+            artifacts/synthetic_smoke/run_manifest.json
+            dist/*
+            artifacts/package_manifest.json
