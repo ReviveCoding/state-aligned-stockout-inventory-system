@@ -4,7 +4,6 @@ import pandas as pd
 
 from inventory_ai.evaluation.metrics import forecast_metrics
 
-
 ROUTING_COLUMNS = [
     "series_id",
     "selected_model",
@@ -33,7 +32,9 @@ def learn_series_router(
     truth_keys = validation_truth[["series_id", "date_idx"]].drop_duplicates()
     rows: list[dict] = []
     for series_id, truth_sub in validation_truth.groupby("series_id", sort=True):
-        forecast_sub = validation_forecasts[validation_forecasts["series_id"].eq(series_id)]
+        forecast_sub = validation_forecasts[
+            validation_forecasts["series_id"].eq(series_id)
+        ]
         expected = set(map(tuple, truth_sub[["series_id", "date_idx"]].to_numpy()))
         metrics: dict[str, dict[str, float | int]] = {}
         for model, model_frame in forecast_sub.groupby("model", sort=True):
@@ -42,7 +43,9 @@ def learn_series_router(
                 continue
             metrics[str(model)] = forecast_metrics(model_frame, truth_sub)
         if baseline_model not in metrics:
-            raise ValueError(f"router baseline lacks complete validation coverage for {series_id}")
+            raise ValueError(
+                f"router baseline lacks complete validation coverage for {series_id}"
+            )
         baseline_wape = float(metrics[baseline_model]["wape"])
         best_model = min(metrics, key=lambda model: float(metrics[model]["wape"]))
         best_wape = float(metrics[best_model]["wape"])
@@ -101,7 +104,9 @@ def apply_series_router(
     routed = pd.concat(rows, ignore_index=True) if rows else pd.DataFrame()
     if routed.empty:
         raise ValueError("router produced no forecasts")
-    expected_keys = set(map(tuple, forecasts[["series_id", "date_idx"]].drop_duplicates().to_numpy()))
+    expected_keys = set(
+        map(tuple, forecasts[["series_id", "date_idx"]].drop_duplicates().to_numpy())
+    )
     actual_keys = set(map(tuple, routed[["series_id", "date_idx"]].to_numpy()))
     if actual_keys != expected_keys:
         raise ValueError("router key coverage mismatch")
@@ -164,44 +169,51 @@ def learn_decision_aware_router(
             if actual == expected:
                 stats[str(model)] = forecast_metrics(model_frame, truth_sub)
         if baseline_model not in stats:
-            raise ValueError(f"router baseline lacks complete validation coverage for {series_id}")
+            raise ValueError(
+                f"router baseline lacks complete validation coverage for {series_id}"
+            )
         baseline_wape = float(stats[baseline_model]["wape"])
         baseline_cost = float(cost_by_series_model[(series_id, baseline_model)])
         n_rows = int(stats[baseline_model]["n"])
         eligible = []
         for model, values in stats.items():
             model_wape = float(values["wape"])
-            if (
-                model == baseline_model
-                or (n_rows >= min_validation_rows
-                    and model_wape <= baseline_wape * (1.0 + max_relative_wape_regression))
+            if model == baseline_model or (
+                n_rows >= min_validation_rows
+                and model_wape <= baseline_wape * (1.0 + max_relative_wape_regression)
             ):
-                eligible.append((
-                    model,
-                    model_wape,
-                    float(cost_by_series_model[(series_id, model)]),
-                ))
+                eligible.append(
+                    (
+                        model,
+                        model_wape,
+                        float(cost_by_series_model[(series_id, model)]),
+                    )
+                )
         selected_model, selected_wape, selected_cost = min(
             eligible, key=lambda item: (item[2], item[1], item[0])
         )
-        rows.append({
-            "series_id": series_id,
-            "selected_model": selected_model,
-            "selected_wape": selected_wape,
-            "baseline_wape": baseline_wape,
-            "relative_improvement": float(
-                (baseline_wape - selected_wape) / max(baseline_wape, 1e-9)
-            ),
-            "n_validation_rows": n_rows,
-            "selected_cost": selected_cost,
-            "baseline_cost": baseline_cost,
-            "relative_cost_improvement": float(
-                (baseline_cost - selected_cost) / max(baseline_cost, 1e-9)
-            ),
-            "routing_reason": "lowest_validation_cost_within_wape_guardrail",
-        })
+        rows.append(
+            {
+                "series_id": series_id,
+                "selected_model": selected_model,
+                "selected_wape": selected_wape,
+                "baseline_wape": baseline_wape,
+                "relative_improvement": float(
+                    (baseline_wape - selected_wape) / max(baseline_wape, 1e-9)
+                ),
+                "n_validation_rows": n_rows,
+                "selected_cost": selected_cost,
+                "baseline_cost": baseline_cost,
+                "relative_cost_improvement": float(
+                    (baseline_cost - selected_cost) / max(baseline_cost, 1e-9)
+                ),
+                "routing_reason": "lowest_validation_cost_within_wape_guardrail",
+            }
+        )
     routing = pd.DataFrame(rows)
     expected_series = set(validation_truth["series_id"].unique())
     if set(routing["series_id"]) != expected_series:
-        raise ValueError("decision-aware router did not produce one decision for every series")
+        raise ValueError(
+            "decision-aware router did not produce one decision for every series"
+        )
     return routing.sort_values("series_id").reset_index(drop=True)

@@ -24,7 +24,9 @@ def check_chronos_capability() -> ChronosCapability:
         import chronos  # noqa: F401
 
         installed = version("chronos-forecasting")
-        return ChronosCapability(True, installed, "Chronos optional dependency is available.")
+        return ChronosCapability(
+            True, installed, "Chronos optional dependency is available."
+        )
     except (ImportError, PackageNotFoundError) as exc:
         return ChronosCapability(
             False,
@@ -76,17 +78,30 @@ def build_chronos_frames(
         ]
         if column in context
     ]
-    context_columns = ["series_id", "date_idx", target_col, "price", "promo", "dow"] + past_covariates
+    context_columns = [
+        "series_id",
+        "date_idx",
+        target_col,
+        "price",
+        "promo",
+        "dow",
+    ] + past_covariates
     if context[context_columns].isna().any().any():
         raise ValueError("Chronos context contains null target or covariates")
     context_df = context[context_columns].copy()
-    context_df = context_df.rename(columns={"series_id": "item_id", target_col: "target"})
+    context_df = context_df.rename(
+        columns={"series_id": "item_id", target_col: "target"}
+    )
     context_df["timestamp"] = _timestamp(context_df["date_idx"])
-    context_df = context_df.drop(columns="date_idx").sort_values(["item_id", "timestamp"]).reset_index(drop=True)
+    context_df = (
+        context_df.drop(columns="date_idx")
+        .sort_values(["item_id", "timestamp"])
+        .reset_index(drop=True)
+    )
 
-    future = panel[(panel["date_idx"] > origin) & (panel["date_idx"] <= origin + horizon)][
-        ["series_id", "date_idx", "price", "promo", "dow"]
-    ].copy()
+    future = panel[
+        (panel["date_idx"] > origin) & (panel["date_idx"] <= origin + horizon)
+    ][["series_id", "date_idx", "price", "promo", "dow"]].copy()
     series_ids = sorted(panel["series_id"].astype(str).unique())
     expected_keys = {
         (series_id, date_idx)
@@ -100,15 +115,22 @@ def build_chronos_frames(
         # Production inference may have no future rows in the historical panel.
         last = panel[panel["date_idx"] == origin][["series_id", "price", "dow"]].copy()
         if last["series_id"].nunique() != panel["series_id"].nunique():
-            raise ValueError("cannot construct Chronos future covariates at the requested origin")
-        future = last.assign(_key=1).merge(
-            pd.DataFrame({"step": range(1, horizon + 1), "_key": 1}), on="_key"
-        ).drop(columns="_key")
+            raise ValueError(
+                "cannot construct Chronos future covariates at the requested origin"
+            )
+        future = (
+            last.assign(_key=1)
+            .merge(pd.DataFrame({"step": range(1, horizon + 1), "_key": 1}), on="_key")
+            .drop(columns="_key")
+        )
         future["date_idx"] = origin + future["step"]
         future["dow"] = (future["dow"] + future["step"]) % 7
         future["promo"] = 0
         future = future.drop(columns="step")
-    elif future[["series_id", "date_idx"]].duplicated().any() or actual_keys != expected_keys:
+    elif (
+        future[["series_id", "date_idx"]].duplicated().any()
+        or actual_keys != expected_keys
+    ):
         missing_keys = sorted(expected_keys - actual_keys)[:5]
         unexpected_keys = sorted(actual_keys - expected_keys)[:5]
         raise ValueError(
@@ -119,7 +141,11 @@ def build_chronos_frames(
         raise ValueError("Chronos future covariates contain null values")
     future_df = future.rename(columns={"series_id": "item_id"})
     future_df["timestamp"] = _timestamp(future_df["date_idx"])
-    future_df = future_df.drop(columns="date_idx").sort_values(["item_id", "timestamp"]).reset_index(drop=True)
+    future_df = (
+        future_df.drop(columns="date_idx")
+        .sort_values(["item_id", "timestamp"])
+        .reset_index(drop=True)
+    )
     return context_df, future_df
 
 
@@ -154,7 +180,7 @@ def prepare_chronos_finetune_inputs(
                     column: group[column].astype(np.float32).to_numpy()
                     for column in past_only + known_covariates
                 },
-                "future_covariates": {column: None for column in known_covariates},
+                "future_covariates": dict.fromkeys(known_covariates),
             }
         )
     return inputs
@@ -185,7 +211,9 @@ class Chronos2Forecaster:
                 raise RuntimeError(capability.message)
             from chronos import BaseChronosPipeline
 
-            self._pipeline = BaseChronosPipeline.from_pretrained(self.model_id, device_map=self.device_map)
+            self._pipeline = BaseChronosPipeline.from_pretrained(
+                self.model_id, device_map=self.device_map
+            )
         return self._pipeline
 
     def predict(
@@ -209,15 +237,28 @@ class Chronos2Forecaster:
         quantile_columns: dict[float, object] = {}
         for quantile in (0.1, 0.5, 0.9):
             candidates = [quantile, str(quantile)]
-            match = next((candidate for candidate in candidates if candidate in prediction.columns), None)
+            match = next(
+                (
+                    candidate
+                    for candidate in candidates
+                    if candidate in prediction.columns
+                ),
+                None,
+            )
             if match is None:
-                raise ValueError(f"Chronos prediction is missing quantile column {quantile}")
+                raise ValueError(
+                    f"Chronos prediction is missing quantile column {quantile}"
+                )
             quantile_columns[quantile] = match
         required = {"item_id", "timestamp"}
         missing = required - set(prediction.columns)
         if missing:
-            raise ValueError(f"Chronos prediction is missing columns: {sorted(missing)}")
-        selected_columns = ["item_id", "timestamp"] + [quantile_columns[q] for q in (0.1, 0.5, 0.9)]
+            raise ValueError(
+                f"Chronos prediction is missing columns: {sorted(missing)}"
+            )
+        selected_columns = ["item_id", "timestamp"] + [
+            quantile_columns[q] for q in (0.1, 0.5, 0.9)
+        ]
         output = prediction[selected_columns].copy()
         output = output.rename(
             columns={
@@ -228,7 +269,9 @@ class Chronos2Forecaster:
             }
         )
         output["timestamp"] = pd.to_datetime(output["timestamp"])
-        output["date_idx"] = (output["timestamp"] - pd.Timestamp("2000-01-01")).dt.days.astype(int)
+        output["date_idx"] = (
+            output["timestamp"] - pd.Timestamp("2000-01-01")
+        ).dt.days.astype(int)
         output["horizon"] = output["date_idx"] - int(origin)
         output["model"] = model_name
         output = output.drop(columns="timestamp")
@@ -241,12 +284,14 @@ class Chronos2Forecaster:
             for series_id in panel["series_id"].astype(str).unique()
             for step in range(1, horizon + 1)
         }
-        actual_keys = set(zip(output["series_id"].astype(str), output["date_idx"].astype(int)))
+        actual_keys = set(
+            zip(output["series_id"].astype(str), output["date_idx"].astype(int))
+        )
         if actual_keys != expected_keys:
             raise ValueError(
                 "Chronos prediction key coverage mismatch: "
-                f"missing={sorted(expected_keys-actual_keys)[:5]}, "
-                f"unexpected={sorted(actual_keys-expected_keys)[:5]}"
+                f"missing={sorted(expected_keys - actual_keys)[:5]}, "
+                f"unexpected={sorted(actual_keys - expected_keys)[:5]}"
             )
         if output[["q10", "q50", "q90"]].isna().any().any():
             raise ValueError("Chronos prediction contains null quantiles")
@@ -261,7 +306,7 @@ class Chronos2Forecaster:
         learning_rate: float = 1e-5,
         num_steps: int = 200,
         batch_size: int = 32,
-    ) -> "Chronos2Forecaster":
+    ) -> Chronos2Forecaster:
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
         fitted = self.pipeline.fit(

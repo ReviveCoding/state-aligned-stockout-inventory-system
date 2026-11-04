@@ -9,7 +9,9 @@ from inventory_ai.data.synthetic import SyntheticConfig, make_synthetic_retail
 
 
 def test_config_rejects_short_history():
-    cfg = PipelineConfig(data=DataConfig(history_days=30), model=ModelConfig(horizon=14))
+    cfg = PipelineConfig(
+        data=DataConfig(history_days=30), model=ModelConfig(horizon=14)
+    )
     with pytest.raises(ValueError, match="disjoint calibration"):
         validate_config(cfg)
 
@@ -37,17 +39,26 @@ def test_forecast_contract_rejects_key_coverage_mismatch():
 
 def test_config_rejects_unsafe_paths_and_overlapping_validation():
     with pytest.raises(ValueError, match="validation_horizon"):
-        validate_config(PipelineConfig(model=ModelConfig(horizon=14, validation_horizon=7)))
+        validate_config(
+            PipelineConfig(model=ModelConfig(horizon=14, validation_horizon=7))
+        )
     with pytest.raises(ValueError, match="output_dir"):
         validate_config(PipelineConfig(output_dir="../outside"))
 
 
 def test_auto_source_falls_back_only_for_missing_archive(tmp_path):
     from dataclasses import replace
+
     from inventory_ai.pipeline import _load_data
 
     cfg = PipelineConfig(
-        data=DataConfig(source="auto", m5_zip_path=str(tmp_path / "missing.zip"), n_series=4, history_days=50, allow_fallback=True),
+        data=DataConfig(
+            source="auto",
+            m5_zip_path=str(tmp_path / "missing.zip"),
+            n_series=4,
+            history_days=50,
+            allow_fallback=True,
+        ),
         model=ModelConfig(horizon=10, validation_horizon=10),
     )
     frame, source, reason = _load_data(cfg)
@@ -62,7 +73,13 @@ def test_auto_source_does_not_hide_corrupt_archive(tmp_path):
     archive = tmp_path / "corrupt.zip"
     archive.write_text("not a zip", encoding="utf-8")
     cfg = PipelineConfig(
-        data=DataConfig(source="auto", m5_zip_path=str(archive), n_series=4, history_days=50, allow_fallback=True),
+        data=DataConfig(
+            source="auto",
+            m5_zip_path=str(archive),
+            n_series=4,
+            history_days=50,
+            allow_fallback=True,
+        ),
         model=ModelConfig(horizon=10, validation_horizon=10),
     )
     with pytest.raises(Exception):
@@ -80,10 +97,20 @@ def test_optional_spark_path_fails_with_actionable_message_when_unavailable():
 
 def test_panel_contract_rejects_gaps_and_unaligned_series():
     frame = make_synthetic_retail(SyntheticConfig(4, 50, 71))
-    with_gap = frame.drop(frame[(frame["series_id"] == frame["series_id"].iloc[0]) & (frame["date_idx"] == 12)].index)
+    with_gap = frame.drop(
+        frame[
+            (frame["series_id"] == frame["series_id"].iloc[0])
+            & (frame["date_idx"] == 12)
+        ].index
+    )
     with pytest.raises(ValueError, match="contiguous"):
         validate_panel(with_gap)
-    shortened = frame.drop(frame[(frame["series_id"] == frame["series_id"].iloc[0]) & (frame["date_idx"] == 49)].index)
+    shortened = frame.drop(
+        frame[
+            (frame["series_id"] == frame["series_id"].iloc[0])
+            & (frame["date_idx"] == 49)
+        ].index
+    )
     with pytest.raises(ValueError, match="common min/max"):
         validate_panel(shortened)
 
@@ -106,25 +133,32 @@ def test_forecast_contract_rejects_inconsistent_horizon_origin():
 def test_m5_price_imputation_is_future_invariant():
     from inventory_ai.data.m5 import impute_prices_causally
 
-    prefix = pd.DataFrame({
-        "id": ["a", "b", "a", "b"],
-        "store_id": ["s1", "s1", "s1", "s1"],
-        "item_id": ["i1", "i2", "i1", "i2"],
-        "wm_yr_wk": [1, 1, 2, 2],
-        "date_idx": [0, 0, 1, 1],
-        "sell_price": [float("nan"), 2.0, float("nan"), 3.0],
-    })
-    extended = pd.concat([
-        prefix,
-        pd.DataFrame({
-            "id": ["a", "b"],
-            "store_id": ["s1", "s1"],
-            "item_id": ["i1", "i2"],
-            "wm_yr_wk": [3, 3],
-            "date_idx": [2, 2],
-            "sell_price": [1000.0, 1200.0],
-        }),
-    ], ignore_index=True)
+    prefix = pd.DataFrame(
+        {
+            "id": ["a", "b", "a", "b"],
+            "store_id": ["s1", "s1", "s1", "s1"],
+            "item_id": ["i1", "i2", "i1", "i2"],
+            "wm_yr_wk": [1, 1, 2, 2],
+            "date_idx": [0, 0, 1, 1],
+            "sell_price": [float("nan"), 2.0, float("nan"), 3.0],
+        }
+    )
+    extended = pd.concat(
+        [
+            prefix,
+            pd.DataFrame(
+                {
+                    "id": ["a", "b"],
+                    "store_id": ["s1", "s1"],
+                    "item_id": ["i1", "i2"],
+                    "wm_yr_wk": [3, 3],
+                    "date_idx": [2, 2],
+                    "sell_price": [1000.0, 1200.0],
+                }
+            ),
+        ],
+        ignore_index=True,
+    )
     prefix_price = impute_prices_causally(prefix)
     extended_price = impute_prices_causally(extended).iloc[: len(prefix)]
     assert prefix_price.tolist() == extended_price.tolist()
@@ -133,6 +167,7 @@ def test_m5_price_imputation_is_future_invariant():
 
 def test_release_gate_rejects_excessive_open_loop_fill_degradation():
     from dataclasses import asdict
+
     from inventory_ai.config import ReleaseGateConfig
     from inventory_ai.gates.release import evaluate_release
 
@@ -144,18 +179,32 @@ def test_release_gate_rejects_excessive_open_loop_fill_degradation():
         "scenario_hierarchy_error": 0.0,
         "scenario_diagnostics": {"normalized_quantile_mae": 0.0},
         "test_forecast_metrics": {"production_candidate": {"coverage_80": 0.8}},
-        "recovery_diagnostics": {"mae_improvement": 1.0, "absolute_bias_improvement": 1.0, "q95_upper_coverage": 1.0},
-        "lifecycle_metrics": {"state_macro_f1": 1.0, "ladt_mae": 0.0, "ladt_spearman": 1.0},
+        "recovery_diagnostics": {
+            "mae_improvement": 1.0,
+            "absolute_bias_improvement": 1.0,
+            "q95_upper_coverage": 1.0,
+        },
+        "lifecycle_metrics": {
+            "state_macro_f1": 1.0,
+            "ladt_mae": 0.0,
+            "ladt_spearman": 1.0,
+        },
         "candidate_wape_improvement": 0.1,
         "cost_win_rate": 1.0,
         "candidate_cost_regression": -0.1,
         "candidate_fill_rate_degradation": 0.02,
-        "forecast_slice_summary": {"worst_relative_wape_regression": 0.0, "slice_win_rate": 1.0},
+        "forecast_slice_summary": {
+            "worst_relative_wape_regression": 0.0,
+            "slice_win_rate": 1.0,
+        },
         "repeat_stockout_ratio": 0.0,
         "repeat_stockout_improvement": 1.0,
         "closed_loop_cost_regression": 0.0,
         "closed_loop_lost_sales_improvement": 1.0,
-        "closed_loop_slice_summary": {"worst_relative_cost_regression": 0.0, "worst_fill_rate_degradation": 0.0},
+        "closed_loop_slice_summary": {
+            "worst_relative_cost_regression": 0.0,
+            "worst_fill_rate_degradation": 0.0,
+        },
         "recovery_lower_bound_violations": 0,
         "recovery_do_no_harm_max": 0.0,
     }
@@ -167,11 +216,15 @@ def test_release_gate_rejects_excessive_open_loop_fill_degradation():
 def test_package_version_is_single_sourced():
     import tomllib
     from pathlib import Path
+
     from inventory_ai import __version__
 
     pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
     assert "version" in pyproject["project"]["dynamic"]
-    assert pyproject["tool"]["setuptools"]["dynamic"]["version"]["attr"] == "inventory_ai.__version__"
+    assert (
+        pyproject["tool"]["setuptools"]["dynamic"]["version"]["attr"]
+        == "inventory_ai.__version__"
+    )
     assert __version__ == "0.6.2"
 
 
@@ -189,19 +242,26 @@ def test_cli_help_and_version_do_not_import_numerical_pipeline():
 
     version = subprocess.run(
         [sys.executable, "-m", "inventory_ai.cli", "--version"],
-        check=True, capture_output=True, text=True, env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
     )
     assert version.stdout.strip() == "0.6.2"
     help_result = subprocess.run(
         [sys.executable, "-m", "inventory_ai.cli", "--help"],
-        check=True, capture_output=True, text=True, env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+        env=env,
     )
     assert "--config" in help_result.stdout
 
 
 def test_config_rejects_history_too_short_for_disjoint_folds(tmp_path):
-    from inventory_ai.config import load_config
     import pytest
+
+    from inventory_ai.config import load_config
 
     path = tmp_path / "short.yaml"
     path.write_text(
@@ -223,6 +283,7 @@ model:
 
 def test_release_gate_rejects_excessive_interval_width():
     from dataclasses import asdict
+
     from inventory_ai.config import ReleaseGateConfig
     from inventory_ai.gates.release import evaluate_release
 
@@ -234,19 +295,33 @@ def test_release_gate_rejects_excessive_interval_width():
         "scenario_hierarchy_error": 0.0,
         "scenario_diagnostics": {"normalized_quantile_mae": 0.0},
         "test_forecast_metrics": {"production_candidate": {"coverage_80": 0.8}},
-        "recovery_diagnostics": {"mae_improvement": 1.0, "absolute_bias_improvement": 1.0, "q95_upper_coverage": 1.0},
-        "lifecycle_metrics": {"state_macro_f1": 1.0, "ladt_mae": 0.0, "ladt_spearman": 1.0},
+        "recovery_diagnostics": {
+            "mae_improvement": 1.0,
+            "absolute_bias_improvement": 1.0,
+            "q95_upper_coverage": 1.0,
+        },
+        "lifecycle_metrics": {
+            "state_macro_f1": 1.0,
+            "ladt_mae": 0.0,
+            "ladt_spearman": 1.0,
+        },
         "candidate_wape_improvement": 0.1,
         "cost_win_rate": 1.0,
         "candidate_cost_regression": -0.1,
         "candidate_fill_rate_degradation": 0.0,
         "candidate_interval_width_ratio": 2.0,
-        "forecast_slice_summary": {"worst_relative_wape_regression": 0.0, "slice_win_rate": 1.0},
+        "forecast_slice_summary": {
+            "worst_relative_wape_regression": 0.0,
+            "slice_win_rate": 1.0,
+        },
         "repeat_stockout_ratio": 0.0,
         "repeat_stockout_improvement": 1.0,
         "closed_loop_cost_regression": 0.0,
         "closed_loop_lost_sales_improvement": 1.0,
-        "closed_loop_slice_summary": {"worst_relative_cost_regression": 0.0, "worst_fill_rate_degradation": 0.0},
+        "closed_loop_slice_summary": {
+            "worst_relative_cost_regression": 0.0,
+            "worst_fill_rate_degradation": 0.0,
+        },
         "recovery_lower_bound_violations": 0,
         "recovery_do_no_harm_max": 0.0,
     }
@@ -257,6 +332,7 @@ def test_release_gate_rejects_excessive_interval_width():
 
 def test_archive_extraction_rejects_path_traversal_and_multiple_roots(tmp_path):
     import zipfile
+
     from scripts._archive_safety import safe_extract_zip
 
     traversal = tmp_path / "traversal.zip"
@@ -277,6 +353,7 @@ def test_archive_extraction_rejects_path_traversal_and_multiple_roots(tmp_path):
 
 def test_archive_extraction_accepts_single_clean_root(tmp_path):
     import zipfile
+
     from scripts._archive_safety import safe_extract_zip
 
     archive_path = tmp_path / "clean.zip"
@@ -304,7 +381,9 @@ def test_build_backend_supports_pep639_license_metadata():
 
     pyproject = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
     setuptools_req = next(
-        item for item in pyproject["build-system"]["requires"] if item.startswith("setuptools")
+        item
+        for item in pyproject["build-system"]["requires"]
+        if item.startswith("setuptools")
     )
     match = re.search(r">=([0-9]+)\.([0-9]+)\.([0-9]+)", setuptools_req)
     assert match is not None
@@ -321,8 +400,12 @@ def test_balanced_panel_sample_preserves_latest_periods():
     assert len(sample) <= 80
     original_bounds = panel.groupby("series_id")["date_idx"].agg(["min", "max"])
     sample_bounds = sample.groupby("series_id")["date_idx"].agg(["min", "max"])
-    pd.testing.assert_series_equal(sample_bounds["min"], original_bounds["min"], check_names=False)
-    pd.testing.assert_series_equal(sample_bounds["max"], original_bounds["max"], check_names=False)
+    pd.testing.assert_series_equal(
+        sample_bounds["min"], original_bounds["min"], check_names=False
+    )
+    pd.testing.assert_series_equal(
+        sample_bounds["max"], original_bounds["max"], check_names=False
+    )
 
 
 def test_pipeline_failure_restores_previous_owned_outputs(tmp_path, monkeypatch):
@@ -340,8 +423,14 @@ def test_pipeline_failure_restores_previous_owned_outputs(tmp_path, monkeypatch)
     )
     report = tmp_path / cfg.output_dir / "metrics_summary.json"
     manifest = tmp_path / cfg.artifact_dir / "run_manifest.json"
-    sample = tmp_path / "data" / "processed" / cfg.run_name / "training_panel_sample.csv"
-    for path, text in [(report, "old-report"), (manifest, "old-manifest"), (sample, "old-sample")]:
+    sample = (
+        tmp_path / "data" / "processed" / cfg.run_name / "training_panel_sample.csv"
+    )
+    for path, text in [
+        (report, "old-report"),
+        (manifest, "old-manifest"),
+        (sample, "old-sample"),
+    ]:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8")
 
@@ -358,9 +447,12 @@ def test_pipeline_failure_restores_previous_owned_outputs(tmp_path, monkeypatch)
 
 def test_package_filter_excludes_orphan_pipeline_backups():
     from pathlib import Path
+
     from scripts.package_release import include
 
-    assert include(Path(".m5_smoke-backup-orphan/reports/metrics_summary.json")) is False
+    assert (
+        include(Path(".m5_smoke-backup-orphan/reports/metrics_summary.json")) is False
+    )
 
 
 def test_ci_uses_least_privilege_checkout_credentials():
@@ -373,6 +465,7 @@ def test_ci_uses_least_privilege_checkout_credentials():
 
 def test_package_filter_excludes_local_and_secret_residue():
     from pathlib import Path
+
     from scripts.package_release import include
 
     for path in [
@@ -393,7 +486,9 @@ def test_package_filter_excludes_local_and_secret_residue():
 
 def test_archive_extraction_rejects_duplicate_members(tmp_path):
     import zipfile
+
     import pytest
+
     from scripts._archive_safety import safe_extract_zip
 
     archive = tmp_path / "duplicate.zip"
@@ -407,9 +502,13 @@ def test_archive_extraction_rejects_duplicate_members(tmp_path):
 
 def test_package_filter_excludes_interrupted_write_tmp_residue():
     from pathlib import Path
+
     from scripts.package_release import include
 
-    assert include(Path("reports/synthetic_smoke/inventory_simulation.csv.partial.tmp")) is False
+    assert (
+        include(Path("reports/synthetic_smoke/inventory_simulation.csv.partial.tmp"))
+        is False
+    )
     assert include(Path("artifacts/run_manifest.json.tmp")) is False
 
 
@@ -422,7 +521,13 @@ def test_cli_missing_config_returns_actionable_error_without_traceback(tmp_path)
     env = os.environ.copy()
     env["PYTHONPATH"] = str(Path(__file__).resolve().parents[2] / "src")
     result = subprocess.run(
-        [sys.executable, "-m", "inventory_ai.cli", "--config", "configs/does_not_exist.yaml"],
+        [
+            sys.executable,
+            "-m",
+            "inventory_ai.cli",
+            "--config",
+            "configs/does_not_exist.yaml",
+        ],
         cwd=tmp_path,
         capture_output=True,
         text=True,
@@ -435,6 +540,7 @@ def test_cli_missing_config_returns_actionable_error_without_traceback(tmp_path)
 
 def test_cli_relative_config_defaults_to_current_working_directory(tmp_path):
     import argparse
+
     from inventory_ai.cli import _resolve_root_and_config
 
     config = tmp_path / "configs" / "smoke.yaml"
@@ -442,7 +548,9 @@ def test_cli_relative_config_defaults_to_current_working_directory(tmp_path):
     config.write_text("run_name: smoke\n", encoding="utf-8")
 
     parser = argparse.ArgumentParser()
-    root, resolved = _resolve_root_and_config(str(tmp_path), "configs/smoke.yaml", parser)
+    root, resolved = _resolve_root_and_config(
+        str(tmp_path), "configs/smoke.yaml", parser
+    )
     assert root == tmp_path.resolve()
     assert resolved == config.resolve()
 

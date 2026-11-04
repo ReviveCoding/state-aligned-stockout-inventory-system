@@ -5,7 +5,6 @@ import sys
 import xml.etree.ElementTree as element_tree
 from pathlib import Path
 
-
 EXPECTED = {
     "m5_confirmation_scorecard.svg",
     "m5_heldout_outcomes.svg",
