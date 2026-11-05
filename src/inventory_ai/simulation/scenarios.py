@@ -29,19 +29,23 @@ def generate_correlated_scenarios(
     for (model, series_id), sub in forecast.groupby(["model", "series_id"], sort=True):
         sub = sub.sort_values("horizon")
         steps = len(sub)
-        digest = hashlib.sha256(f"{seed}|{model}|{series_id}".encode("utf-8")).digest()
+        digest = hashlib.sha256(f"{seed}|{model}|{series_id}".encode()).digest()
         group_seed = int.from_bytes(digest[:8], "little", signed=False)
         rng = np.random.default_rng(group_seed)
         shocks = rng.normal(size=(n_scenarios, steps))
         innovation_scale = np.sqrt(1.0 - temporal_rho**2)
         for step in range(1, steps):
-            shocks[:, step] = temporal_rho * shocks[:, step - 1] + innovation_scale * shocks[:, step]
+            shocks[:, step] = (
+                temporal_rho * shocks[:, step - 1] + innovation_scale * shocks[:, step]
+            )
         q10 = sub["q10"].to_numpy(dtype=float)
         q50 = sub["q50"].to_numpy(dtype=float)
         q90 = sub["q90"].to_numpy(dtype=float)
         lower_scale = np.maximum(1e-6, (q50 - q10) / _NORMAL_Q90)
         upper_scale = np.maximum(1e-6, (q90 - q50) / _NORMAL_Q90)
-        values = q50[None, :] + np.where(shocks < 0, shocks * lower_scale[None, :], shocks * upper_scale[None, :])
+        values = q50[None, :] + np.where(
+            shocks < 0, shocks * lower_scale[None, :], shocks * upper_scale[None, :]
+        )
         values = np.maximum(0.0, values)
         for scenario in range(n_scenarios):
             rows.extend(
@@ -75,7 +79,9 @@ def scenario_diagnostics(scenarios: pd.DataFrame) -> dict[str, float | int]:
     correlations = []
     for (_, _, scenario), sub in scenarios.groupby(["model", "series_id", "scenario"]):
         ordered = sub.sort_values("horizon")
-        values = (ordered["demand"] - ordered["median_forecast"]) / ordered["interval_scale"].clip(lower=0.5)
+        values = (ordered["demand"] - ordered["median_forecast"]) / ordered[
+            "interval_scale"
+        ].clip(lower=0.5)
         if len(values) > 2:
             left = values.to_numpy()[:-1]
             right = values.to_numpy()[1:]
@@ -93,16 +99,24 @@ def scenario_diagnostics(scenarios: pd.DataFrame) -> dict[str, float | int]:
     pivot = empirical.pivot(
         index=["model", "series_id", "date_idx"], columns="quantile", values="empirical"
     ).reset_index()
-    anchors = scenarios.groupby(["model", "series_id", "date_idx"], as_index=False).first()
+    anchors = scenarios.groupby(
+        ["model", "series_id", "date_idx"], as_index=False
+    ).first()
     merged = anchors.merge(pivot, on=["model", "series_id", "date_idx"], how="inner")
     errors = []
-    for quantile, forecast_col in [(0.1, "q10_forecast"), (0.5, "median_forecast"), (0.9, "q90_forecast")]:
+    for quantile, forecast_col in [
+        (0.1, "q10_forecast"),
+        (0.5, "median_forecast"),
+        (0.9, "q90_forecast"),
+    ]:
         if quantile in merged.columns:
             errors.append(
                 (merged[quantile] - merged[forecast_col]).abs()
                 / merged["interval_scale"].clip(lower=1.0)
             )
-    normalized_quantile_mae = float(pd.concat(errors, ignore_index=True).mean()) if errors else 1.0
+    normalized_quantile_mae = (
+        float(pd.concat(errors, ignore_index=True).mean()) if errors else 1.0
+    )
     return {
         "n_scenarios": int(scenarios["scenario"].nunique()),
         "mean_lag1_correlation": float(np.mean(correlations)) if correlations else 0.0,

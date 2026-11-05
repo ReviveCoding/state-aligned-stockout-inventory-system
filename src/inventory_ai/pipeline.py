@@ -11,14 +11,25 @@ from pathlib import Path
 
 import pandas as pd
 
-from inventory_ai.calibration.conformal import apply_conformal_adjustments, fit_conformal_adjustments, repair_quantiles
+from inventory_ai.calibration.conformal import (
+    apply_conformal_adjustments,
+    fit_conformal_adjustments,
+    repair_quantiles,
+)
 from inventory_ai.censoring.recovery import (
-    add_controlled_stockouts, recover_latent_demand, recovery_diagnostics, sample_recovery_posterior
+    add_controlled_stockouts,
+    recover_latent_demand,
+    recovery_diagnostics,
+    sample_recovery_posterior,
 )
 from inventory_ai.config import PipelineConfig
 from inventory_ai.contracts import validate_forecast, validate_panel
 from inventory_ai.data.m5 import load_m5_sample
-from inventory_ai.data.synthetic import SyntheticConfig, make_lifecycle_benchmark, make_synthetic_retail
+from inventory_ai.data.synthetic import (
+    SyntheticConfig,
+    make_lifecycle_benchmark,
+    make_synthetic_retail,
+)
 from inventory_ai.evaluation.metrics import (
     choose_candidate,
     evaluate_models,
@@ -35,10 +46,15 @@ from inventory_ai.models.baselines import seasonal_naive_forecast, tsb_forecast
 from inventory_ai.models.chronos_adapter import check_chronos_capability
 from inventory_ai.models.quantile import DirectQuantileForecaster
 from inventory_ai.models.router import (
-    apply_series_router, learn_decision_aware_router, summarize_routing
+    apply_series_router,
+    learn_decision_aware_router,
+    summarize_routing,
 )
 from inventory_ai.reconciliation.hierarchy import (
-    hierarchy_error, reconcile_bottom_up, reconcile_scenarios_bottom_up, scenario_hierarchy_error
+    hierarchy_error,
+    reconcile_bottom_up,
+    reconcile_scenarios_bottom_up,
+    scenario_hierarchy_error,
 )
 from inventory_ai.reporting.reports import write_release_report
 from inventory_ai.simulation.closed_loop import (
@@ -58,9 +74,16 @@ from inventory_ai.simulation.inventory import (
     summarize_policy_at_scale,
     tune_policy_scales,
 )
-from inventory_ai.simulation.scenarios import generate_correlated_scenarios, scenario_diagnostics
-from inventory_ai.utils.io import environment_manifest, sha256_file, write_csv, write_json
-
+from inventory_ai.simulation.scenarios import (
+    generate_correlated_scenarios,
+    scenario_diagnostics,
+)
+from inventory_ai.utils.io import (
+    environment_manifest,
+    sha256_file,
+    write_csv,
+    write_json,
+)
 
 PIPELINE_REPORT_FILENAMES = (
     "calibration_forecasts.csv",
@@ -90,7 +113,11 @@ SQL_REPORT_FILENAMES = ("sql_daily_demand_mart.csv", "sql_inventory_kpi_mart.csv
 
 
 def _progress(stage: str, started: float) -> None:
-    if os.environ.get("INVENTORY_AI_PROGRESS", "").strip().lower() in {"1", "true", "yes"}:
+    if os.environ.get("INVENTORY_AI_PROGRESS", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+    }:
         elapsed = time.time() - started
         print(f"[inventory-ai] {stage} ({elapsed:.2f}s)", file=sys.stderr, flush=True)
 
@@ -123,44 +150,59 @@ def _balanced_panel_sample(panel: pd.DataFrame, max_rows: int = 5_000) -> pd.Dat
     observation for every represented series while respecting ``max_rows``.
     """
     if len(panel) <= max_rows:
-        return panel.sort_values(["series_id", "date_idx"]).reset_index(drop=True).copy()
+        return (
+            panel.sort_values(["series_id", "date_idx"]).reset_index(drop=True).copy()
+        )
     series_ids = sorted(panel["series_id"].unique())
+    series_groups = panel.groupby("series_id", sort=False)
     per_series = max(1, max_rows // max(len(series_ids), 1))
     parts: list[pd.DataFrame] = []
     for series_id in series_ids:
-        group = panel[panel["series_id"].eq(series_id)].sort_values("date_idx")
+        group = series_groups.get_group(series_id).sort_values("date_idx")
         take = min(per_series, len(group))
         if take == 1:
             indices = [len(group) - 1]
         else:
-            indices = sorted(set(int(round(value)) for value in pd.Series(range(take)).map(
-                lambda idx: idx * (len(group) - 1) / (take - 1)
-            )))
+            indices = sorted(
+                {round(index * (len(group) - 1) / (take - 1)) for index in range(take)}
+            )
         parts.append(group.iloc[indices])
     sampled = pd.concat(parts, ignore_index=False)
     if len(sampled) < max_rows:
-        remaining = panel.loc[~panel.index.isin(sampled.index)].sort_values(
-            ["date_idx", "series_id"], ascending=[False, True]
-        ).head(max_rows - len(sampled))
+        remaining = (
+            panel.loc[~panel.index.isin(sampled.index)]
+            .sort_values(["date_idx", "series_id"], ascending=[False, True])
+            .head(max_rows - len(sampled))
+        )
         sampled = pd.concat([sampled, remaining], ignore_index=False)
-    return sampled.sort_values(["series_id", "date_idx"]).head(max_rows).reset_index(drop=True)
+    return (
+        sampled.sort_values(["series_id", "date_idx"])
+        .head(max_rows)
+        .reset_index(drop=True)
+    )
 
 
 def _load_data(cfg: PipelineConfig) -> tuple[pd.DataFrame, str, str | None]:
     source = cfg.data.source
     if source == "synthetic":
         return (
-            make_synthetic_retail(SyntheticConfig(cfg.data.n_series, cfg.data.history_days, cfg.seed)),
+            make_synthetic_retail(
+                SyntheticConfig(cfg.data.n_series, cfg.data.history_days, cfg.seed)
+            ),
             "synthetic",
             None,
         )
     if source == "m5":
-        return load_m5_sample(
-            cfg.data.m5_zip_path,
-            cfg.data.n_series,
-            cfg.data.history_days,
-            series_offset=cfg.data.series_offset,
-        ), "m5", None
+        return (
+            load_m5_sample(
+                cfg.data.m5_zip_path,
+                cfg.data.n_series,
+                cfg.data.history_days,
+                series_offset=cfg.data.series_offset,
+            ),
+            "m5",
+            None,
+        )
     try:
         frame = load_m5_sample(
             cfg.data.m5_zip_path,
@@ -174,7 +216,9 @@ def _load_data(cfg: PipelineConfig) -> tuple[pd.DataFrame, str, str | None]:
             raise
         reason = f"M5 archive not found: {exc}"
         return (
-            make_synthetic_retail(SyntheticConfig(cfg.data.n_series, cfg.data.history_days, cfg.seed)),
+            make_synthetic_retail(
+                SyntheticConfig(cfg.data.n_series, cfg.data.history_days, cfg.seed)
+            ),
             "synthetic_fallback",
             reason,
         )
@@ -182,7 +226,9 @@ def _load_data(cfg: PipelineConfig) -> tuple[pd.DataFrame, str, str | None]:
 
 def _prepare_panel(raw: pd.DataFrame, cfg: PipelineConfig) -> pd.DataFrame:
     validate_panel(raw)
-    controlled = add_controlled_stockouts(raw, seed=cfg.seed, rate=cfg.data.controlled_stockout_rate)
+    controlled = add_controlled_stockouts(
+        raw, seed=cfg.seed, rate=cfg.data.controlled_stockout_rate
+    )
     recovered = recover_latent_demand(controlled)
     featured = add_time_features(recovered, value_col="recovered_demand_mean")
     featured = add_drat(featured, value_col="recovered_demand_mean")
@@ -190,12 +236,18 @@ def _prepare_panel(raw: pd.DataFrame, cfg: PipelineConfig) -> pd.DataFrame:
     return featured
 
 
-def _forecast_at_origin(panel: pd.DataFrame, cfg: PipelineConfig, origin: int) -> pd.DataFrame:
+def _forecast_at_origin(
+    panel: pd.DataFrame, cfg: PipelineConfig, origin: int
+) -> pd.DataFrame:
     horizon = cfg.model.horizon
     naive = seasonal_naive_forecast(panel, origin, horizon)
     tsb = tsb_forecast(panel, origin, horizon)
-    forecaster = DirectQuantileForecaster(max_iter=cfg.model.max_iter, random_state=cfg.seed)
-    forecaster.fit(panel, cutoff=origin, horizon=horizon, max_rows=cfg.model.max_train_rows)
+    forecaster = DirectQuantileForecaster(
+        max_iter=cfg.model.max_iter, random_state=cfg.seed
+    )
+    forecaster.fit(
+        panel, cutoff=origin, horizon=horizon, max_rows=cfg.model.max_train_rows
+    )
     advanced = forecaster.predict(panel, origin=origin, horizon=horizon)
     combined = repair_quantiles(pd.concat([naive, tsb, advanced], ignore_index=True))
     del forecaster
@@ -232,9 +284,13 @@ def _run_pipeline_impl(cfg: PipelineConfig, root: str | Path) -> dict:
         test_origin - 2 * cfg.model.validation_horizon,
         test_origin - 3 * cfg.model.validation_horizon,
     ]
-    pretest_origins = sorted(origin for origin in candidate_pretest_origins if origin > 30)
+    pretest_origins = sorted(
+        origin for origin in candidate_pretest_origins if origin > 30
+    )
     if len(pretest_origins) < 2:
-        raise ValueError("not enough history for separate calibration, validation, and test origins")
+        raise ValueError(
+            "not enough history for separate calibration, validation, and test origins"
+        )
 
     # The earliest fold is calibration-only. Keeping it disjoint from model and
     # policy selection prevents conformal residuals from improving the same
@@ -254,7 +310,9 @@ def _run_pipeline_impl(cfg: PipelineConfig, root: str | Path) -> dict:
     # next origin and, ultimately, the held-out test origin.
     calibration_forecast_history = [initial_calibration_forecasts]
     calibration_truth_history = [initial_calibration_truth]
-    adjustments = fit_conformal_adjustments(initial_calibration_forecasts, initial_calibration_truth)
+    adjustments = fit_conformal_adjustments(
+        initial_calibration_forecasts, initial_calibration_truth
+    )
     validation_forecast_parts = []
     validation_truth_parts = []
     conformal_update_origins = []
@@ -274,15 +332,21 @@ def _run_pipeline_impl(cfg: PipelineConfig, root: str | Path) -> dict:
         conformal_update_origins.append(validation_origin)
         adjustments = fit_conformal_adjustments(
             pd.concat(calibration_forecast_history, ignore_index=True),
-            pd.concat(calibration_truth_history, ignore_index=True).drop_duplicates(["series_id", "date_idx"]),
+            pd.concat(calibration_truth_history, ignore_index=True).drop_duplicates(
+                ["series_id", "date_idx"]
+            ),
         )
     calibration_forecasts = pd.concat(calibration_forecast_history, ignore_index=True)
     validation_forecasts = pd.concat(validation_forecast_parts, ignore_index=True)
-    validation_truth = pd.concat(validation_truth_parts, ignore_index=True).drop_duplicates(["series_id", "date_idx"])
+    validation_truth = pd.concat(
+        validation_truth_parts, ignore_index=True
+    ).drop_duplicates(["series_id", "date_idx"])
     _progress("calibration and validation forecasts fitted", started)
     source_validation = validation_forecasts
     inventory_cfg = InventoryConfig(**asdict(cfg.inventory))
-    source_policy_tuning = tune_policy_scales(source_validation, validation_truth, inventory_cfg)
+    source_policy_tuning = tune_policy_scales(
+        source_validation, validation_truth, inventory_cfg
+    )
     source_inventory_summary = best_tuned_policy_by_model(
         source_policy_tuning,
         max_fill_rate_degradation=cfg.model.selection_max_fill_rate_degradation,
@@ -300,16 +364,25 @@ def _run_pipeline_impl(cfg: PipelineConfig, root: str | Path) -> dict:
         max_relative_wape_regression=cfg.model.router_max_wape_regression,
     )
     validation_router = apply_series_router(source_validation, routing_map)
-    calibrated_validation = pd.concat([source_validation, validation_router], ignore_index=True)
+    calibrated_validation = pd.concat(
+        [source_validation, validation_router], ignore_index=True
+    )
     validation_metrics = evaluate_models(calibrated_validation, validation_truth)
-    validation_slices = validation_model_slice_report(calibrated_validation, validation_truth)
+    validation_slices = validation_model_slice_report(
+        calibrated_validation, validation_truth
+    )
     validation_slice_summaries = summarize_validation_model_slices(validation_slices)
     _progress("router and validation slices evaluated", started)
     router_tuning = tune_policy_scales(
-        pd.concat([
-            calibrated_validation[calibrated_validation["model"].eq("seasonal_naive")],
-            validation_router,
-        ], ignore_index=True),
+        pd.concat(
+            [
+                calibrated_validation[
+                    calibrated_validation["model"].eq("seasonal_naive")
+                ],
+                validation_router,
+            ],
+            ignore_index=True,
+        ),
         validation_truth,
         inventory_cfg,
     )
@@ -324,11 +397,13 @@ def _run_pipeline_impl(cfg: PipelineConfig, root: str | Path) -> dict:
         model: float(summary["policy_scale"])
         for model, summary in tuned_policy_choices.items()
     }
-    validation_inventory_selected_sim, validation_inventory_summary = evaluate_selected_policy_scales(
-        calibrated_validation,
-        validation_truth,
-        inventory_cfg,
-        validation_selected_scales,
+    validation_inventory_selected_sim, validation_inventory_summary = (
+        evaluate_selected_policy_scales(
+            calibrated_validation,
+            validation_truth,
+            inventory_cfg,
+            validation_selected_scales,
+        )
     )
     _progress("validation inventory policies evaluated", started)
     selected_model = choose_candidate(
@@ -342,14 +417,18 @@ def _run_pipeline_impl(cfg: PipelineConfig, root: str | Path) -> dict:
     )
     selected_policy_scale = validation_inventory_summary[selected_model]["policy_scale"]
 
-    test_forecasts = apply_conformal_adjustments(test_forecasts_uncalibrated, adjustments)
+    test_forecasts = apply_conformal_adjustments(
+        test_forecasts_uncalibrated, adjustments
+    )
     test_router = apply_series_router(test_forecasts, routing_map)
     test_forecasts = pd.concat([test_forecasts, test_router], ignore_index=True)
     selected = test_forecasts[test_forecasts["model"] == selected_model].copy()
     selected["source_model"] = selected_model
     selected["model"] = "production_candidate"
     all_forecasts = pd.concat([test_forecasts, selected], ignore_index=True)
-    test_truth = panel[(panel["date_idx"] > test_origin) & (panel["date_idx"] <= test_origin + horizon)]
+    test_truth = panel[
+        (panel["date_idx"] > test_origin) & (panel["date_idx"] <= test_origin + horizon)
+    ]
     validate_forecast(all_forecasts, test_truth)
     test_metrics = evaluate_models(all_forecasts, test_truth)
     forecast_slices = forecast_slice_report(all_forecasts, test_truth)
@@ -360,7 +439,9 @@ def _run_pipeline_impl(cfg: PipelineConfig, root: str | Path) -> dict:
     hierarchy_max_error = hierarchy_error(reconciled)
 
     candidate_forecast = all_forecasts[all_forecasts["model"] == "production_candidate"]
-    scenarios = generate_correlated_scenarios(candidate_forecast, n_scenarios=120, seed=cfg.seed)
+    scenarios = generate_correlated_scenarios(
+        candidate_forecast, n_scenarios=120, seed=cfg.seed
+    )
     scenario_stats = scenario_diagnostics(scenarios)
     reconciled_scenarios = reconcile_scenarios_bottom_up(scenarios, panel)
     scenario_coherence_error = scenario_hierarchy_error(reconciled_scenarios)
@@ -383,14 +464,20 @@ def _run_pipeline_impl(cfg: PipelineConfig, root: str | Path) -> dict:
     )
     inventory_summary = summarize_inventory(inventory_sim)
     _progress("held-out inventory simulated", started)
-    cost_pivot = inventory_sim.groupby(["model", "series_id"])["cost"].sum().unstack("model")
+    cost_pivot = (
+        inventory_sim.groupby(["model", "series_id"])["cost"].sum().unstack("model")
+    )
     if {"production_candidate", "seasonal_naive"}.issubset(cost_pivot.columns):
-        cost_win_rate = float((cost_pivot["production_candidate"] <= cost_pivot["seasonal_naive"]).mean())
+        cost_win_rate = float(
+            (cost_pivot["production_candidate"] <= cost_pivot["seasonal_naive"]).mean()
+        )
     else:
         cost_win_rate = 0.0
     candidate_cost = inventory_summary["production_candidate"]["total_cost"]
     baseline_cost = inventory_summary["seasonal_naive"]["total_cost"]
-    candidate_cost_regression = float((candidate_cost - baseline_cost) / (baseline_cost + 1e-9))
+    candidate_cost_regression = float(
+        (candidate_cost - baseline_cost) / (baseline_cost + 1e-9)
+    )
     candidate_fill_rate_degradation = float(
         inventory_summary["seasonal_naive"]["fill_rate"]
         - inventory_summary["production_candidate"]["fill_rate"]
@@ -400,18 +487,31 @@ def _run_pipeline_impl(cfg: PipelineConfig, root: str | Path) -> dict:
         / (test_metrics["seasonal_naive"]["mean_interval_width"] + 1e-9)
     )
 
-    closed_loop = closed_loop_policy_comparison(cfg.data.n_series, cfg.closed_loop_cycles, inventory_cfg, cfg.seed, recovery_safety=1.05)
+    closed_loop = closed_loop_policy_comparison(
+        cfg.data.n_series,
+        cfg.closed_loop_cycles,
+        inventory_cfg,
+        cfg.seed,
+        recovery_safety=1.05,
+    )
     closed_summary = summarize_closed_loop(closed_loop)
-    closed_sensitivity = closed_loop_safety_sweep(cfg.data.n_series, cfg.closed_loop_cycles, inventory_cfg, cfg.seed)
+    closed_sensitivity = closed_loop_safety_sweep(
+        cfg.data.n_series, cfg.closed_loop_cycles, inventory_cfg, cfg.seed
+    )
     closed_slices = summarize_closed_loop_slices(closed_loop)
     closed_slice_comparison = compare_closed_loop_slices(closed_slices)
-    closed_slice_summary = summarize_closed_loop_slice_comparison(closed_slice_comparison)
+    closed_slice_summary = summarize_closed_loop_slice_comparison(
+        closed_slice_comparison
+    )
     _progress("closed-loop replay completed", started)
     naive_closed = closed_summary["naive_no_recovery"]
     adaptive_closed = closed_summary["recovery_state_aware"]
     repeat_stockout_ratio = adaptive_closed["repeat_stockout_ratio"]
     repeat_stockout_improvement = float(
-        (naive_closed["repeat_stockout_ratio"] - adaptive_closed["repeat_stockout_ratio"])
+        (
+            naive_closed["repeat_stockout_ratio"]
+            - adaptive_closed["repeat_stockout_ratio"]
+        )
         / (naive_closed["repeat_stockout_ratio"] + 1e-9)
     )
     closed_loop_cost_regression = float(
@@ -423,25 +523,40 @@ def _run_pipeline_impl(cfg: PipelineConfig, root: str | Path) -> dict:
         / (naive_closed["lost_sales"] + 1e-9)
     )
 
-    lifecycle_raw = make_lifecycle_benchmark(SyntheticConfig(cfg.lifecycle_series, cfg.data.history_days, cfg.seed))
+    lifecycle_raw = make_lifecycle_benchmark(
+        SyntheticConfig(cfg.lifecycle_series, cfg.data.history_days, cfg.seed)
+    )
     lifecycle_recovered = recover_latent_demand(lifecycle_raw)
-    lifecycle_features = add_time_features(lifecycle_recovered, value_col="recovered_demand_mean")
+    lifecycle_features = add_time_features(
+        lifecycle_recovered, value_col="recovered_demand_mean"
+    )
     lifecycle_estimated = estimate_ladt(lifecycle_features)
     lifecycle_stats = lifecycle_metrics(lifecycle_estimated)
 
     recovery_stats = recovery_diagnostics(panel)
     recovery_samples = sample_recovery_posterior(panel, n_draws=30, seed=cfg.seed)
     _progress("lifecycle and recovery evaluated", started)
-    lower_bound_violations = int((panel["recovered_demand_mean"] + 1e-9 < panel["sales"]).sum())
+    lower_bound_violations = int(
+        (panel["recovered_demand_mean"] + 1e-9 < panel["sales"]).sum()
+    )
     negative_forecasts = int((all_forecasts[["q10", "q50", "q90"]] < 0).sum().sum())
-    quantile_crossing = int(((all_forecasts["q10"] > all_forecasts["q50"]) | (all_forecasts["q50"] > all_forecasts["q90"])).sum())
+    quantile_crossing = int(
+        (
+            (all_forecasts["q10"] > all_forecasts["q50"])
+            | (all_forecasts["q50"] > all_forecasts["q90"])
+        ).sum()
+    )
     expected_keys = set(map(tuple, test_truth[["series_id", "date_idx"]].to_numpy()))
     coverage_errors = 0
     for _, sub in all_forecasts.groupby("model"):
-        coverage_errors += int(set(map(tuple, sub[["series_id", "date_idx"]].to_numpy())) != expected_keys)
+        coverage_errors += int(
+            set(map(tuple, sub[["series_id", "date_idx"]].to_numpy())) != expected_keys
+        )
     baseline_wape = float(test_metrics["seasonal_naive"]["wape"])
     candidate_wape = float(test_metrics["production_candidate"]["wape"])
-    candidate_wape_improvement = float((baseline_wape - candidate_wape) / (baseline_wape + 1e-9))
+    candidate_wape_improvement = float(
+        (baseline_wape - candidate_wape) / (baseline_wape + 1e-9)
+    )
 
     metrics = {
         "run_name": cfg.run_name,
@@ -493,7 +608,10 @@ def _run_pipeline_impl(cfg: PipelineConfig, root: str | Path) -> dict:
 
     write_csv(reports / "calibration_forecasts.csv", calibration_forecasts)
     write_csv(reports / "validation_forecasts.csv", calibrated_validation)
-    write_csv(reports / "validation_inventory_selected_policy.csv", validation_inventory_selected_sim)
+    write_csv(
+        reports / "validation_inventory_selected_policy.csv",
+        validation_inventory_selected_sim,
+    )
     write_csv(reports / "validation_slice_report.csv", validation_slices)
     write_csv(reports / "routing_map.csv", routing_map)
     write_csv(reports / "policy_tuning.csv", policy_tuning)
@@ -531,7 +649,9 @@ def _run_pipeline_impl(cfg: PipelineConfig, root: str | Path) -> dict:
     report_files = [reports / name for name in PIPELINE_REPORT_FILENAMES]
     missing_outputs = [path.name for path in report_files if not path.exists()]
     if missing_outputs:
-        raise RuntimeError(f"pipeline did not produce required outputs: {missing_outputs}")
+        raise RuntimeError(
+            f"pipeline did not produce required outputs: {missing_outputs}"
+        )
     input_manifest["output_files"] = {
         path.name: {"sha256": sha256_file(path), "bytes": path.stat().st_size}
         for path in report_files
@@ -546,12 +666,16 @@ def _run_pipeline_impl(cfg: PipelineConfig, root: str | Path) -> dict:
     _progress("manifest written", started)
     return {"release": release, "metrics": metrics}
 
+
 def _owned_paths_for_run(cfg: PipelineConfig, root_path: Path) -> list[Path]:
     reports = root_path / cfg.output_dir
     artifacts = root_path / cfg.artifact_dir
     processed = root_path / "data" / "processed" / cfg.run_name
     return [
-        *(reports / name for name in (*PIPELINE_REPORT_FILENAMES, *SQL_REPORT_FILENAMES)),
+        *(
+            reports / name
+            for name in (*PIPELINE_REPORT_FILENAMES, *SQL_REPORT_FILENAMES)
+        ),
         artifacts / "run_manifest.json",
         processed / "training_panel_sample.csv",
     ]

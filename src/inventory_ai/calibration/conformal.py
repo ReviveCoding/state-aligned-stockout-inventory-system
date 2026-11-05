@@ -11,14 +11,14 @@ def repair_quantiles(forecast: pd.DataFrame) -> pd.DataFrame:
     The median is the operational point forecast, so only the interval bounds
     are projected around it.
     """
-    out = forecast.copy()
-    q50 = np.maximum(0.0, out["q50"].to_numpy(dtype=float))
-    q10 = np.maximum(0.0, out["q10"].to_numpy(dtype=float))
-    q90 = np.maximum(0.0, out["q90"].to_numpy(dtype=float))
-    out["q50"] = q50
-    out["q10"] = np.minimum(q10, q50)
-    out["q90"] = np.maximum(q90, q50)
-    return out
+    repaired_forecast = forecast.copy()
+    median_forecast = np.maximum(0.0, repaired_forecast["q50"].to_numpy(dtype=float))
+    lower_quantile = np.maximum(0.0, repaired_forecast["q10"].to_numpy(dtype=float))
+    upper_quantile = np.maximum(0.0, repaired_forecast["q90"].to_numpy(dtype=float))
+    repaired_forecast["q50"] = median_forecast
+    repaired_forecast["q10"] = np.minimum(lower_quantile, median_forecast)
+    repaired_forecast["q90"] = np.maximum(upper_quantile, median_forecast)
+    return repaired_forecast
 
 
 def _finite_sample_quantile(values: np.ndarray, target_coverage: float) -> float:
@@ -34,7 +34,8 @@ def fit_conformal_adjustments(
     target_coverage: float = 0.80,
     shrinkage_strength: float = 30.0,
 ) -> pd.DataFrame:
-    merged = validation_forecasts.merge(
+    """Fit signed conformalized quantile regression adjustments by model and horizon."""
+    scored_validation = validation_forecasts.merge(
         validation_truth[["series_id", "date_idx", "demand"]],
         on=["series_id", "date_idx"],
         how="inner",
@@ -43,36 +44,56 @@ def fit_conformal_adjustments(
     # Signed CQR scores are negative when an observation lies well inside the
     # base interval. Preserving that sign allows a systematically over-wide
     # interval to shrink instead of making calibration expansion-only.
-    merged["nonconformity"] = np.maximum(
-        merged["q10"].to_numpy() - merged["demand"].to_numpy(),
-        merged["demand"].to_numpy() - merged["q90"].to_numpy(),
+    scored_validation["nonconformity"] = np.maximum(
+        scored_validation["q10"].to_numpy() - scored_validation["demand"].to_numpy(),
+        scored_validation["demand"].to_numpy() - scored_validation["q90"].to_numpy(),
     )
-    pooled = {
+    pooled_adjustments = {
         model: _finite_sample_quantile(sub["nonconformity"].to_numpy(), target_coverage)
-        for model, sub in merged.groupby("model")
+        for model, sub in scored_validation.groupby("model")
     }
     rows = []
-    for (model, horizon), sub in merged.groupby(["model", "horizon"]):
-        values = sub["nonconformity"].to_numpy()
-        local_adjustment = _finite_sample_quantile(values, target_coverage)
-        pooled_adjustment = pooled[model]
-        weight = float(len(values) / (len(values) + max(shrinkage_strength, 0.0)))
-        adjustment = float(weight * local_adjustment + (1.0 - weight) * pooled_adjustment)
-        rows.append({
-            "model": model,
-            "horizon": int(horizon),
-            "adjustment": adjustment,
-            "local_adjustment": local_adjustment,
-            "pooled_adjustment": pooled_adjustment,
-            "shrinkage_weight": weight,
-            "n": int(len(values)),
-        })
+    for (model, horizon), sub in scored_validation.groupby(["model", "horizon"]):
+        nonconformity_scores = sub["nonconformity"].to_numpy()
+        local_adjustment = _finite_sample_quantile(
+            nonconformity_scores, target_coverage
+        )
+        pooled_adjustment = pooled_adjustments[model]
+        local_weight = float(
+            len(nonconformity_scores)
+            / (len(nonconformity_scores) + max(shrinkage_strength, 0.0))
+        )
+        adjustment = float(
+            local_weight * local_adjustment + (1.0 - local_weight) * pooled_adjustment
+        )
+        rows.append(
+            {
+                "model": model,
+                "horizon": int(horizon),
+                "adjustment": adjustment,
+                "local_adjustment": local_adjustment,
+                "pooled_adjustment": pooled_adjustment,
+                "shrinkage_weight": local_weight,
+                "n": int(len(nonconformity_scores)),
+            }
+        )
     return pd.DataFrame(rows)
 
 
-def apply_conformal_adjustments(forecast: pd.DataFrame, adjustments: pd.DataFrame) -> pd.DataFrame:
-    out = forecast.merge(adjustments[["model", "horizon", "adjustment"]], on=["model", "horizon"], how="left")
-    out["adjustment"] = out["adjustment"].fillna(0.0)
-    out["q10"] = np.maximum(0.0, out["q10"] - out["adjustment"])
-    out["q90"] = np.maximum(out["q50"], out["q90"] + out["adjustment"])
-    return repair_quantiles(out.drop(columns="adjustment"))
+def apply_conformal_adjustments(
+    forecast: pd.DataFrame, adjustments: pd.DataFrame
+) -> pd.DataFrame:
+    adjusted_forecast = forecast.merge(
+        adjustments[["model", "horizon", "adjustment"]],
+        on=["model", "horizon"],
+        how="left",
+    )
+    adjusted_forecast["adjustment"] = adjusted_forecast["adjustment"].fillna(0.0)
+    adjusted_forecast["q10"] = np.maximum(
+        0.0, adjusted_forecast["q10"] - adjusted_forecast["adjustment"]
+    )
+    adjusted_forecast["q90"] = np.maximum(
+        adjusted_forecast["q50"],
+        adjusted_forecast["q90"] + adjusted_forecast["adjustment"],
+    )
+    return repair_quantiles(adjusted_forecast.drop(columns="adjustment"))

@@ -2,8 +2,16 @@ from __future__ import annotations
 
 import pandas as pd
 
-from inventory_ai.censoring.recovery import add_controlled_stockouts, recover_latent_demand, recovery_diagnostics
-from inventory_ai.data.synthetic import SyntheticConfig, make_lifecycle_benchmark, make_synthetic_retail
+from inventory_ai.censoring.recovery import (
+    add_controlled_stockouts,
+    recover_latent_demand,
+    recovery_diagnostics,
+)
+from inventory_ai.data.synthetic import (
+    SyntheticConfig,
+    make_lifecycle_benchmark,
+    make_synthetic_retail,
+)
 from inventory_ai.evaluation.metrics import lifecycle_metrics
 from inventory_ai.features.basic import add_time_features
 from inventory_ai.lifecycle.drat import PROBABILITY_COLUMNS, add_drat, estimate_ladt
@@ -19,7 +27,10 @@ def test_recovery_respects_lower_bound_and_do_no_harm():
     frame = _prepared()
     assert (frame["recovered_demand_mean"] + 1e-9 >= frame["sales"]).all()
     nonstockout = frame["stockout"].eq(0)
-    assert (frame.loc[nonstockout, "recovered_demand_mean"] == frame.loc[nonstockout, "sales"]).all()
+    assert (
+        frame.loc[nonstockout, "recovered_demand_mean"]
+        == frame.loc[nonstockout, "sales"]
+    ).all()
 
 
 def test_recovery_improves_controlled_mae():
@@ -50,7 +61,9 @@ def test_drat_is_invariant_to_future_rows():
         suffixes=("_prefix", "_full"),
     )
     for col in cols:
-        pd.testing.assert_series_equal(joined[f"{col}_prefix"], joined[f"{col}_full"], check_names=False)
+        pd.testing.assert_series_equal(
+            joined[f"{col}_prefix"], joined[f"{col}_full"], check_names=False
+        )
 
 
 def test_lifecycle_benchmark_is_nontrivial_and_recoverable():
@@ -89,11 +102,21 @@ def test_controlled_stockout_injection_is_prefix_and_order_invariant():
     prefix = frame[frame["date_idx"] <= 55].copy()
     full = add_controlled_stockouts(frame, seed=91, rate=0.17)
     prefix_only = add_controlled_stockouts(prefix, seed=91, rate=0.17)
-    shuffled = add_controlled_stockouts(prefix.sample(frac=1.0, random_state=7), seed=91, rate=0.17)
+    shuffled = add_controlled_stockouts(
+        prefix.sample(frac=1.0, random_state=7), seed=91, rate=0.17
+    )
     cols = ["series_id", "date_idx", "sales", "controlled_stockout"]
-    expected = prefix_only[cols].sort_values(["series_id", "date_idx"]).reset_index(drop=True)
-    from_full = full[full["date_idx"] <= 55][cols].sort_values(["series_id", "date_idx"]).reset_index(drop=True)
-    from_shuffled = shuffled[cols].sort_values(["series_id", "date_idx"]).reset_index(drop=True)
+    expected = (
+        prefix_only[cols].sort_values(["series_id", "date_idx"]).reset_index(drop=True)
+    )
+    from_full = (
+        full[full["date_idx"] <= 55][cols]
+        .sort_values(["series_id", "date_idx"])
+        .reset_index(drop=True)
+    )
+    from_shuffled = (
+        shuffled[cols].sort_values(["series_id", "date_idx"]).reset_index(drop=True)
+    )
     pd.testing.assert_frame_equal(expected, from_full)
     pd.testing.assert_frame_equal(expected, from_shuffled)
 

@@ -5,7 +5,6 @@ import html
 import json
 from pathlib import Path
 
-
 WIDTH = 1200
 INK = "#0F172A"
 MUTED = "#475569"
@@ -28,10 +27,7 @@ def esc(value):
 
 
 def text(x, y, label, style="small"):
-    return (
-        f'<text x="{x}" y="{y}" class="{style}">'
-        f"{esc(label)}</text>"
-    )
+    return f'<text x="{x}" y="{y}" class="{style}">{esc(label)}</text>'
 
 
 def box(x, y, width, height, fill, stroke="none", radius=12):
@@ -71,9 +67,27 @@ def scorecard(metrics, gate_status):
 
     cards = [
         ("Held-out WAPE", f"-{wape_gain:.2f}%", "vs seasonal naive", "#EFF6FF", BLUE),
-        ("Simulated cost", f"-{cost_reduction:.2f}%", "vs seasonal naive", "#F0FDF4", GREEN),
-        ("Fill-rate change", f"{fill_change:+.3f} pp", "no service loss", "#FFF7ED", ORANGE),
-        ("Series cost wins", f"{cost_wins:.2f}%", "at fixed policy contract", "#F8FAFC", SLATE),
+        (
+            "Simulated cost",
+            f"-{cost_reduction:.2f}%",
+            "vs seasonal naive",
+            "#F0FDF4",
+            GREEN,
+        ),
+        (
+            "Fill-rate change",
+            f"{fill_change:+.3f} pp",
+            "no service loss",
+            "#FFF7ED",
+            ORANGE,
+        ),
+        (
+            "Series cost wins",
+            f"{cost_wins:.2f}%",
+            "at fixed policy contract",
+            "#F8FAFC",
+            SLATE,
+        ),
     ]
 
     body = [
@@ -120,27 +134,25 @@ def outcomes(metrics):
     baseline_wape = 100 * nested(
         metrics, "test_forecast_metrics", "seasonal_naive", "wape"
     )
-    candidate_wape = 100 * nested(
-        metrics, "test_forecast_metrics", selected, "wape"
-    )
+    candidate_wape = 100 * nested(metrics, "test_forecast_metrics", selected, "wape")
 
-    baseline_cost = nested(
-        metrics, "inventory_summary", "seasonal_naive", "total_cost"
-    )
-    candidate_cost = nested(
-        metrics, "inventory_summary", selected, "total_cost"
-    )
+    baseline_cost = nested(metrics, "inventory_summary", "seasonal_naive", "total_cost")
+    candidate_cost = nested(metrics, "inventory_summary", selected, "total_cost")
 
     baseline_fill = 100 * nested(
         metrics, "inventory_summary", "seasonal_naive", "fill_rate"
     )
-    candidate_fill = 100 * nested(
-        metrics, "inventory_summary", selected, "fill_rate"
-    )
+    candidate_fill = 100 * nested(metrics, "inventory_summary", selected, "fill_rate")
 
     rows = [
         ("Held-out WAPE", baseline_wape, candidate_wape, "%", "Lower is better"),
-        ("Simulated inventory cost", baseline_cost, candidate_cost, "", "Lower is better"),
+        (
+            "Simulated inventory cost",
+            baseline_cost,
+            candidate_cost,
+            "",
+            "Lower is better",
+        ),
         ("Fill rate", baseline_fill, candidate_fill, "%", "Higher is better"),
     ]
 
@@ -199,7 +211,9 @@ def outcomes(metrics):
         ]
     )
 
-    return document("Held-out M5 outcomes versus seasonal-naive baseline", 580, "\n".join(body))
+    return document(
+        "Held-out M5 outcomes versus seasonal-naive baseline", 580, "\n".join(body)
+    )
 
 
 def checks(metrics, gate_status):
@@ -209,14 +223,20 @@ def checks(metrics, gate_status):
     )
     fill_degradation = 100 * nested(metrics, "candidate_fill_rate_degradation")
     cost_wins = 100 * nested(metrics, "cost_win_rate")
-    slice_wins = 100 * nested(
-        metrics, "forecast_slice_summary", "slice_win_rate"
-    )
+    slice_wins = 100 * nested(metrics, "forecast_slice_summary", "slice_win_rate")
 
     rows = [
         ("Interval-width ratio", f"{interval:.3f}x", "Configured cap 1.350x"),
-        ("Worst-slice WAPE regression", f"{worst_slice:+.2f}%", "Configured cap +20.00%"),
-        ("Fill-rate degradation", f"{fill_degradation:+.3f} pp", "Configured cap +1.000 pp"),
+        (
+            "Worst-slice WAPE regression",
+            f"{worst_slice:+.2f}%",
+            "Configured cap +20.00%",
+        ),
+        (
+            "Fill-rate degradation",
+            f"{fill_degradation:+.3f} pp",
+            "Configured cap +1.000 pp",
+        ),
         ("Series cost-win rate", f"{cost_wins:.2f}%", "Configured floor 50.00%"),
         ("Forecast-slice win rate", f"{slice_wins:.2f}%", "Configured floor 35.00%"),
     ]
@@ -265,7 +285,9 @@ def main():
     root = args.root.resolve()
     output_dir = args.output_dir.resolve()
 
-    metrics_path = root / "reports" / "m5_expanded_v2_confirmation" / "metrics_summary.json"
+    metrics_path = (
+        root / "reports" / "m5_expanded_v2_confirmation" / "metrics_summary.json"
+    )
     gate_path = root / "reports" / "m5_expanded_v2_confirmation" / "release_gate.json"
 
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
