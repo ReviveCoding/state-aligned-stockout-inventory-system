@@ -154,21 +154,17 @@ def _balanced_panel_sample(panel: pd.DataFrame, max_rows: int = 5_000) -> pd.Dat
             panel.sort_values(["series_id", "date_idx"]).reset_index(drop=True).copy()
         )
     series_ids = sorted(panel["series_id"].unique())
+    series_groups = panel.groupby("series_id", sort=False)
     per_series = max(1, max_rows // max(len(series_ids), 1))
     parts: list[pd.DataFrame] = []
     for series_id in series_ids:
-        group = panel[panel["series_id"].eq(series_id)].sort_values("date_idx")
+        group = series_groups.get_group(series_id).sort_values("date_idx")
         take = min(per_series, len(group))
         if take == 1:
             indices = [len(group) - 1]
         else:
             indices = sorted(
-                set(
-                    int(round(value))
-                    for value in pd.Series(range(take)).map(
-                        lambda idx: idx * (len(group) - 1) / (take - 1)
-                    )
-                )
+                {round(index * (len(group) - 1) / (take - 1)) for index in range(take)}
             )
         parts.append(group.iloc[indices])
     sampled = pd.concat(parts, ignore_index=False)
